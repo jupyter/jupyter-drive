@@ -1,4 +1,4 @@
-1# Configuration file for ipython-notebook.
+# Configuration file for ipython-notebook.
 
 c = get_config()
 
