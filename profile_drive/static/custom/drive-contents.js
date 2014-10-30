@@ -9,7 +9,7 @@ define([
 ], function(IPython, $, utils, dialog) {
     var FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
 
-    var ContentManager = function(options) {
+    var Contents = function(options) {
         // Constructor
         //
         // A contentmanager handles passing file operations
@@ -47,18 +47,18 @@ define([
      * Name of newly created notebook files.
      * @type {string}
      */
-    ContentManager.NEW_NOTEBOOK_TITLE = 'Untitled';
+    Contents.NEW_NOTEBOOK_TITLE = 'Untitled';
 
     /**
      * Extension for notebook files.
      * @type {string}
      */
-    ContentManager.NOTEBOOK_EXTENSION = 'ipynb';
+    Contents.NOTEBOOK_EXTENSION = 'ipynb';
 
 
-    ContentManager.MULTIPART_BOUNDARY = '-------314159265358979323846';
+    Contents.MULTIPART_BOUNDARY = '-------314159265358979323846';
 
-    ContentManager.NOTEBOOK_MIMETYPE = 'application/ipynb';
+    Contents.NOTEBOOK_MIMETYPE = 'application/ipynb';
 
 
     /**
@@ -80,7 +80,7 @@ define([
      * @private
      * @method on_gapi_load
      */
-    ContentManager.prototype.on_gapi_load = function() {
+    Contents.prototype.on_gapi_load = function() {
         var that = this;
         gapi.load('auth:client,drive-realtime,drive-share', function() {
             gapi.client.load('drive', 'v2', function() {
@@ -95,7 +95,7 @@ define([
      * @param {boolean} opt_withPopup If true, display popup without first
      *     trying to authorize without a popup.
      */
-    ContentManager.prototype.authorize = function(opt_withPopup) {
+    Contents.prototype.authorize = function(opt_withPopup) {
         var that = this;
         var doAuthorize = function() {
             gapi.auth.authorize({
@@ -144,7 +144,7 @@ define([
      * @param {Function} onSuccess called with the folder Id on success
      * @param {Function} onFailure called with the error on Failure
      */
-    ContentManager.prototype.get_id_for_path = function(path, onSuccess, onFailure) {
+    Contents.prototype.get_id_for_path = function(path, onSuccess, onFailure) {
         // Use recursive strategy, with helper function
         // get_id_for_relative_path.
 
@@ -210,7 +210,7 @@ define([
      *     resource).
      * @param {Function} onFailure called with the error on Failure
      */
-    ContentManager.prototype.get_resource_for_filename = function(
+    Contents.prototype.get_resource_for_filename = function(
         folder_id,
         filename,
         onSuccess,
@@ -259,16 +259,16 @@ define([
     * @param {Object?} opt_params a dictionary containing the following keys
     *     pinned: whether this save should be pinned
     */
-    ContentManager.prototype.upload_to_drive = function(data, metadata,
+    Contents.prototype.upload_to_drive = function(data, metadata,
         success_callback, error_callback, opt_fileId, opt_params) {
         var params = opt_params || {};
-        var delimiter = '\r\n--' + ContentManager.MULTIPART_BOUNDARY + '\r\n';
-        var close_delim = '\r\n--' + ContentManager.MULTIPART_BOUNDARY + '--';
+        var delimiter = '\r\n--' + Contents.MULTIPART_BOUNDARY + '\r\n';
+        var close_delim = '\r\n--' + Contents.MULTIPART_BOUNDARY + '--';
         var body = delimiter +
             'Content-Type: application/json\r\n\r\n' +
             JSON.stringify(metadata) +
             delimiter +
-            'Content-Type: ' + ContentManager.NOTEBOOK_MIMETYPE + '\r\n' +
+            'Content-Type: ' + Contents.NOTEBOOK_MIMETYPE + '\r\n' +
             '\r\n' +
             data +
             close_delim;
@@ -289,7 +289,7 @@ define([
             },
             'headers': {
                 'Content-Type': 'multipart/mixed; boundary="' +
-                ContentManager.MULTIPART_BOUNDARY + '"'
+                Contents.MULTIPART_BOUNDARY + '"'
             },
             'body': body
         });
@@ -313,10 +313,10 @@ define([
      * @param {string} opt_folderId optinal Drive folder Id to search for
      *     filenames.  Uses root, if none is specified.
      */
-    ContentManager.prototype.get_new_filename = function(callback, opt_folderId) {
+    Contents.prototype.get_new_filename = function(callback, opt_folderId) {
         /** @type {string} */
         var folderId = opt_folderId || 'root';
-        var query = 'title contains \'' + ContentManager.NEW_NOTEBOOK_TITLE + '\'' +
+        var query = 'title contains \'' + Contents.NEW_NOTEBOOK_TITLE + '\'' +
             ' and \'' + folderId + '\' in parents' +
             ' and trashed = false';
         var request = gapi.client.drive.files.list({
@@ -327,8 +327,8 @@ define([
 
         request.execute(function(response) {
             // Use 'Untitled.ipynb' as a fallback in case of error
-            var fallbackFilename = ContentManager.NEW_NOTEBOOK_TITLE + '.' +
-            ContentManager.NOTEBOOK_EXTENSION;
+            var fallbackFilename = Contents.NEW_NOTEBOOK_TITLE + '.' +
+            Contents.NOTEBOOK_EXTENSION;
             if (!response || response['error']) {
                 callback(fallbackFilename);
                 return;
@@ -346,8 +346,8 @@ define([
             // names tried, and existingFilenames contains N elements.
             for (var i = 0; i <= existingFilenames.length; i++) {
                 /** @type {string} */
-                var filename = ContentManager.NEW_NOTEBOOK_TITLE + i + '.' +
-                    ContentManager.NOTEBOOK_EXTENSION;
+                var filename = Contents.NEW_NOTEBOOK_TITLE + i + '.' +
+                    Contents.NOTEBOOK_EXTENSION;
                 if (existingFilenames.indexOf(filename) == -1) {
                     callback(filename);
                     return;
@@ -367,16 +367,14 @@ define([
      * Load a notebook.
      *
      * Calls success_callback with notebook JSON object (as string), or
-     * error_callback with error.
+     * options.error with error.
      *
      * @method load_notebook
      * @param {String} path
      * @param {String} name
-     * @param {Function} success_callback
-     * @param {Function} error_callback
+     * @param {Object} options
      */
-    ContentManager.prototype.load_notebook = function (path, name, success_callback,
-        error_callback) {
+    Contents.prototype.load_file = function (path, name, options) {
         var that = this;
         this.gapi_ready.done(function() {
             that.get_id_for_path(path, function(folder_id) {
@@ -394,19 +392,20 @@ define([
                                 //    notebook_contents, model);
                                 var model = JSON.parse(notebook_contents);
 
-                                success_callback({
+                                options.success({
                                     content: model,
                                     // A hack to deal with file/memory format conversions
                                     name: model.metadata.name
                                 });
                             } else {
-                                error_callback(xhrRequest);
+                                // TODO (wrap this as Error)
+                                options.error(xhrRequest);
                             }
                         }
                     };
                     xhrRequest.send();
-                }, error_callback)
-            }, error_callback);
+                }, options.error)
+            }, options.error);
         });
     };
 
@@ -417,7 +416,7 @@ define([
      * @method scroll_to_cell
      * @param {String} path The path to create the new notebook at
      */
-    ContentManager.prototype.new_notebook = function(path) {
+    Contents.prototype.new_notebook = function(path) {
         var that = this;
         this.gapi_ready.done(function() {
             that.get_id_for_path(path, function(folder_id) {
@@ -441,7 +440,7 @@ define([
                         'parents' : [{'id' : folder_id}],
                         'title' : filename,
                         'description': 'IP[y] file',
-                        'mimeType': ContentManager.NOTEBOOK_MIMETYPE
+                        'mimeType': Contents.NOTEBOOK_MIMETYPE
                     }
                     that.upload_to_drive(JSON.stringify(data), metadata, function (data, status, xhr) {
                         var notebook_name = data.name;
@@ -460,14 +459,14 @@ define([
         });
     };
 
-    ContentManager.prototype.delete_notebook = function(name, path) {
+    Contents.prototype.delete_notebook = function(name, path) {
         var settings = {
             processData : false,
             cache : false,
             type : "DELETE",
             dataType : "json",
             success : $.proxy(this.events.trigger, this.events,
-                'notebook_deleted.ContentManager',
+                'notebook_deleted.Contents',
                 {
                     name: name,
                     path: path
@@ -483,7 +482,7 @@ define([
         $.ajax(url, settings);
     };
 
-    ContentManager.prototype.rename_notebook = function(path, name, new_name) {
+    Contents.prototype.rename_notebook = function(path, name, new_name) {
         var that = this;
         var data = {name: new_name};
         var settings = {
@@ -494,11 +493,11 @@ define([
             dataType: "json",
             headers : {'Content-Type': 'application/json'},
             success :  function (json, status, xhr) {
-                that.events.trigger('notebook_rename_success.ContentManager',
+                that.events.trigger('notebook_rename_success.Contents',
                     json);
             },
             error : function (xhr, status, error) {
-                that.events.trigger('notebook_rename_error.ContentManager',
+                that.events.trigger('notebook_rename_error.Contents',
                     [xhr, status, error]);
             }
         }
@@ -511,15 +510,8 @@ define([
         $.ajax(url, settings);
     };
 
-    ContentManager.prototype.save_notebook = function(path, name, content,
-        extra_settings) {
+    Contents.prototype.save_file = function(path, name, model, options) {
         var that = notebook;
-        // Create a JSON model to be sent to the server.
-        var model = {
-            name : name,
-            path : path,
-            content : content
-        };
         // time the ajax call for autosave tuning purposes.
         var start =  new Date().getTime();
         // We do the call with settings so we can set cache to false.
@@ -530,16 +522,16 @@ define([
             data : JSON.stringify(model),
             headers : {'Content-Type': 'application/json'},
             success : $.proxy(this.events.trigger, this.events,
-                'notebook_save_success.ContentManager',
+                'notebook_save_success.Contents',
                 $.extend(model, { start : start })),
             error : function (xhr, status, error) {
-                that.events.trigger('notebook_save_error.ContentManager',
+                that.events.trigger('notebook_save_error.Contents',
                     [xhr, status, error, model]);
             }
         };
-        if (extra_settings) {
+        if (options.extra_settings) {
             for (var key in extra_settings) {
-                settings[key] = extra_settings[key];
+                $.settings[key] = extra_settings[key];
             }
         }
         var url = utils.url_join_encode(
@@ -555,11 +547,11 @@ define([
      * Checkpointing Functions
      */
 
-    ContentManager.prototype.save_checkpoint = function() {
+    Contents.prototype.save_checkpoint = function() {
         // This is not necessary - integrated into save
     };
 
-    ContentManager.prototype.restore_checkpoint = function(notebook, id) {
+    Contents.prototype.restore_checkpoint = function(notebook, id) {
         that = notebook;
         this.events.trigger('notebook_restoring.Notebook', checkpoint);
         var url = utils.url_join_encode(
@@ -577,7 +569,7 @@ define([
         );
     };
 
-    ContentManager.prototype.list_checkpoints = function(notebook) {
+    Contents.prototype.list_checkpoints = function(notebook) {
         that = notebook;
         var url = utils.url_join_encode(
             that.base_url,
@@ -610,11 +602,11 @@ define([
      *     path: the path
      * @method list_notebooks
      * @param {String} path The path to list notebooks in
-     * @param {Function} load_callback called with list of notebooks on success
-     * @param {Function} error_callback called with ajax results on error
+     * @param {Object} options Object with the following keys
+     *     success: success callback
+     *     error: error callback
      */
-    ContentManager.prototype.list_contents = function(path, load_callback,
-        error_callback) {
+    Contents.prototype.list_contents = function(path, options) {
         var that = this;
         this.gapi_ready.done(function() {
             that.get_id_for_path(path, function(folder_id) {
@@ -627,9 +619,9 @@ define([
                     'q' : query
                 });
                 request.execute(function(response) {
-                    // On a drive API error, call error_callback
+                    // On a drive API error, call options.error
                     if (!response || response['error']) {
-                        error_callback(response ? response['error'] : null);
+                        options.error(response ? response['error'] : null);
                         return;
                     }
 
@@ -648,14 +640,14 @@ define([
                             last_modified: files_resource['modifiedDate']
                         };
                     });
-                    load_callback(list);
+                    options.success({content: list});
                 });
-            }, error_callback);
+            }, options.error);
         });
     };
 
 
-    IPython.ContentManager = ContentManager;
+    IPython.Contents = Contents;
 
-    return {'ContentManager': ContentManager};
+    return {'Contents': Contents};
 });
