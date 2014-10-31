@@ -374,7 +374,7 @@ define([
      * @param {String} name
      * @param {Object} options
      */
-    Contents.prototype.load_file = function (path, name, options) {
+    Contents.prototype.load = function (path, name, options) {
         var that = this;
         this.gapi_ready.done(function() {
             that.get_id_for_path(path, function(folder_id) {
@@ -410,16 +410,18 @@ define([
     };
 
     /**
-     * Creates a new notebook file at the specified path, and
-     * opens that notebook in a new window.
+     * Creates a new file at the specified directory path.
      *
-     * @method scroll_to_cell
-     * @param {String} path The path to create the new notebook at
+     * @method new
+     * @param {String} path The directory in which to create the new file
+     * @param {String} name The name of the file to create. Server picks if unspecified.
+     * @param {Object} options Includes 'extension' - the extension to use if name not specified.
      */
-    Contents.prototype.new_notebook = function(path) {
+    Contents.prototype.new = function(path, name, options) {
         var that = this;
         this.gapi_ready.done(function() {
             that.get_id_for_path(path, function(folder_id) {
+                // TODO: use name or extension if provided
                 that.get_new_filename(function(filename) {
                     var data = {
                         'worksheets': [{
@@ -427,7 +429,8 @@ define([
                                 'cell_type': 'code',
                                 'input': '',
                                 'outputs': [],
-                                'language': 'python'
+                                'language': 'python',
+                                'metadata': {}
                             }],
                         }],
                         'metadata': {
@@ -442,18 +445,9 @@ define([
                         'description': 'IP[y] file',
                         'mimeType': Contents.NOTEBOOK_MIMETYPE
                     }
-                    that.upload_to_drive(JSON.stringify(data), metadata, function (data, status, xhr) {
-                        var notebook_name = data.name;
-                        window.open(
-                            utils.url_join_encode(
-                                that.base_url,
-                                'contents',
-                                path,
-                                filename
-                            ),
-                            '_blank'
-                        );
-                    }, function(){});
+                    that.upload_to_drive(JSON.stringify(data), metadata, function (resource) {
+                        options.success({path: path, name: filename});
+                    }, options.error);
                 }, folder_id);
             })
         });
