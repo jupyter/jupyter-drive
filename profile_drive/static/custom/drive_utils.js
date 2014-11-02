@@ -60,13 +60,15 @@ define([
             return gapi_utils.wrap_gapi_request(request)
             .then(function(response) {
                 var children = response['items'];
-		if (!children) {
-		    // 'directory does not exist' error.
-		    return $.Deferred().reject().promise();
+		if (!children || children.length == 0) {
+		    var error = new Error('The specified file/folder did not exist: ' + component);
+                    error.name = 'NotFoundError';
+		    return $.Deferred().reject(error).promise();
 		}
-		if (children.length != 1) {
-		    // 'runtime error' this should not happen
-		    return $.Deferred().reject().promise();
+		if (children.length > 1) {
+		    var error = new Error('Multiple files/folders with the given name existed: ' + component);
+                    error.name = 'BadNameError';
+		    return $.Deferred().reject(error).promise();
 		}
 		if (type == FileType.FILE) {
 		    return children[0];
@@ -79,7 +81,8 @@ define([
         var components = path.split('/');
         for(var i = 0; i < components.length; i++) {
             var c = components[i];
-            var t = (i == components.length - 1) ? type : FileType.Folder;
+            var t = (i == components.length - 1) ? type : FileType.FOLDER;
+          console.log(t);
             if (c === '') { continue; }
             result = result.then($.proxy(get_id_for_relative_path, this, c, t));
 	};
