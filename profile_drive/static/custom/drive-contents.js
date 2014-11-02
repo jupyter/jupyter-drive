@@ -43,9 +43,8 @@ define([
      */
     Contents.prototype.load = function (path, name, options) {
         gapi_utils.gapi_ready
-            .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
+        .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
         .then(function(file_resource) {
-          console.log(file_resource);
             var defer = $.Deferred();
             // Sends request to load file to drive.
             var token = gapi.auth.getToken()['access_token'];
@@ -58,8 +57,7 @@ define([
 			var notebook_contents = xhrRequest.responseText;
 			//colab.nbformat.convertJsonNotebookToRealtime(
 			//    notebook_contents, model);
-                      console.log(notebook_contents)
-			var model = JSON.parse(notebook_contents);
+        		var model = JSON.parse(notebook_contents);
 	    	        defer.resolve({
 	 		    content: model,
 			    // A hack to deal with file/memory format conversions
