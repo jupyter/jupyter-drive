@@ -82,7 +82,6 @@ define([
         for(var i = 0; i < components.length; i++) {
             var c = components[i];
             var t = (i == components.length - 1) ? type : FileType.FOLDER;
-          console.log(t);
             if (c === '') { continue; }
             result = result.then($.proxy(get_id_for_relative_path, this, c, t));
 	};
