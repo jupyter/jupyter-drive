@@ -173,7 +173,7 @@ define([
                 'revisionId': 'head',
                 'resource': body
             });
-            return gapi_utils.wrap_gapi_request(request);
+            return gapi_utils.execute(request);
 	})
         .then(function(item) {
             return JSON.stringify({
@@ -195,7 +195,7 @@ define([
                 'fileId': file_id,
                 'revisionId': checkpoint_id
             });
-            return gapi_utils.wrap_gapi_request(request);
+            return gapi_utils.execute(request);
 	})
 	.then(function(response) {
             return gapi_utils.download(response['downloadUrl']);
@@ -214,7 +214,7 @@ define([
         .then(function(resource) {
             var file_id = resource['id'];
             var request = gapi.client.drive.revisions.list({ 'fileId': file_id });
-            return gapi_utils.wrap_gapi_request(request);
+            return gapi_utils.execute(request);
         })
         .then(function(response) {
             // TODO: filter out non-pinned revisions
@@ -265,7 +265,7 @@ define([
 		'maxResults' : 1000,
 		'q' : query
 	    });
-	    return gapi_utils.wrap_gapi_request(request);
+	    return gapi_utils.execute(request);
 	})
 	.then(function(response) {
 	    // Convert this list to the format that is passed to

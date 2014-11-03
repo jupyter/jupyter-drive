@@ -57,7 +57,7 @@ define([
                     'q': query
                 });
             }
-            return gapi_utils.wrap_gapi_request(request)
+            return gapi_utils.execute(request)
             .then(function(response) {
                 var children = response['items'];
 		if (!children || children.length == 0) {
@@ -114,7 +114,7 @@ define([
         });
 
         var fallbackFilename = NEW_NOTEBOOK_TITLE + '.' + NOTEBOOK_EXTENSION;
-        return gapi_utils.wrap_gapi_request(request)
+        return gapi_utils.execute(request)
         .then(function(response) {
             // Use 'Untitled.ipynb' as a fallback in case of error
             var files = response['items'] || [];
@@ -188,7 +188,7 @@ define([
             },
             'body': body
         });
-        return gapi_utils.wrap_gapi_request(request);
+        return gapi_utils.execute(request);
     };
 
 
