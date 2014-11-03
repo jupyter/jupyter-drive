@@ -19,10 +19,7 @@ define([
         // Parameters:
         //  options: dictionary
         //      Dictionary of keyword arguments.
-        //          events: $(Events) instance
         //          base_url: string
-        var that = this;
-        this.events = options.events;
         this.base_url = options.base_url;
     };
 
@@ -170,37 +167,15 @@ define([
         $.ajax(url, settings);
     };
 
-    Contents.prototype.save_file = function(path, name, model, options) {
-        var that = notebook;
-        // time the ajax call for autosave tuning purposes.
-        var start =  new Date().getTime();
-        // We do the call with settings so we can set cache to false.
-        var settings = {
-            processData : false,
-            cache : false,
-            type : "PUT",
-            data : JSON.stringify(model),
-            headers : {'Content-Type': 'application/json'},
-            success : $.proxy(this.events.trigger, this.events,
-                'notebook_save_success.Contents',
-                $.extend(model, { start : start })),
-            error : function (xhr, status, error) {
-                that.events.trigger('notebook_save_error.Contents',
-                    [xhr, status, error, model]);
-            }
-        };
-        if (options.extra_settings) {
-            for (var key in extra_settings) {
-                $.settings[key] = extra_settings[key];
-            }
-        }
-        var url = utils.url_join_encode(
-            this.base_url,
-            'api/contents',
-            path,
-            name
-        );
-        $.ajax(url, settings);
+    Contents.prototype.save = function(path, name, model, options) {
+        var contents = JSON.stringify(model.content);
+        drive_utils.get_id_for_path(path + '/' + name, drive_utils.FileType.FILE)
+        .then(function(resource) {
+            var file_id = resource['id'];
+	    var metadata = {};
+            return drive_utils.upload_to_drive(contents, metadata, file_id);
+        })
+        .then(options.success, options.error);
     };
 
     /**
@@ -229,20 +204,8 @@ define([
         );
     };
 
-    Contents.prototype.list_checkpoints = function(notebook) {
-        that = notebook;
-        var url = utils.url_join_encode(
-            that.base_url,
-            'api/contents',
-            that.notebook_path,
-            that.notebook_name,
-            'checkpoints'
-        );
-        $.get(url).done(
-            $.proxy(that.list_checkpoints_success, that)
-        ).fail(
-            $.proxy(that.list_checkpoints_error, that)
-        );
+    Contents.prototype.list_checkpoints = function(path, name, options) {
+        options.error(new Error('checkpoints not implemented'));
     };
 
     /**
