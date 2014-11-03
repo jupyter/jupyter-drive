@@ -41,34 +41,13 @@ define([
     Contents.prototype.load = function (path, name, options) {
         gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
-        .then(function(file_resource) {
-            var defer = $.Deferred();
-            // Sends request to load file to drive.
-            var token = gapi.auth.getToken()['access_token'];
-	    var xhrRequest = new XMLHttpRequest();
-	    xhrRequest.open('GET', file_resource['downloadUrl'], true);
-	    xhrRequest.setRequestHeader('Authorization', 'Bearer ' + token);
-	    xhrRequest.onreadystatechange = function(e) {
-		if (xhrRequest.readyState == 4) {
-		    if (xhrRequest.status == 200) {
-			var notebook_contents = xhrRequest.responseText;
-			//colab.nbformat.convertJsonNotebookToRealtime(
-			//    notebook_contents, model);
-        		var model = JSON.parse(notebook_contents);
-	    	        defer.resolve({
-	 		    content: model,
-			    // A hack to deal with file/memory format conversions
-			    name: model.metadata.name
-			});
-		    } else {
-			// TODO (wrap xhr as error)
-    	               defer.reject();
-		    }
-		}
-	    };
-            xhrRequest.send()
-            return defer.promise();
-        })
+        .then(function(response) {
+            return gapi_utils.download(response['downloadUrl']);
+         })
+         .then(function(contents) {
+             var model = JSON.parse(contents);
+             return {content: model, name: model.metadata.name};
+         })
         .then(options.success, options.error);
     };
 
@@ -172,8 +151,7 @@ define([
         drive_utils.get_id_for_path(path + '/' + name, drive_utils.FileType.FILE)
         .then(function(resource) {
             var file_id = resource['id'];
-	    var metadata = {};
-            return drive_utils.upload_to_drive(contents, metadata, file_id);
+            return drive_utils.upload_to_drive(contents, {}, file_id);
         })
         .then(options.success, options.error);
     };
@@ -182,30 +160,75 @@ define([
      * Checkpointing Functions
      */
 
-    Contents.prototype.save_checkpoint = function() {
-        // This is not necessary - integrated into save
+    // NOTE: it would be better modify the API to combine create_checkpoint with
+    // save
+    Contents.prototype.create_checkpoint = function(path, name, options) {
+         var file_id_prm = gapi_utils.gapi_ready
+        .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
+        .then(function(resource) { return resource['id']; })
+        .then(function(file_id) {
+            var body = {'pinned': true};
+            var request = gapi.client.drive.revisions.patch({
+                'fileId': file_id,
+                'revisionId': 'head',
+                'resource': body
+            });
+            return gapi_utils.wrap_gapi_request(request);
+	})
+        .then(function(item) {
+            return JSON.stringify({
+                last_modified: item['modifiedDate'],
+                id: item['id'],
+                drive_resource: item
+	    });
+        })
+        .then(options.success, options.error);
     };
 
-    Contents.prototype.restore_checkpoint = function(notebook, id) {
-        that = notebook;
-        this.events.trigger('notebook_restoring.Notebook', checkpoint);
-        var url = utils.url_join_encode(
-            this.base_url,
-            'api/contents',
-            this.notebook_path,
-            this.notebook_name,
-            'checkpoints',
-            checkpoint
-        );
-        $.post(url).done(
-            $.proxy(that.restore_checkpoint_success, that)
-        ).fail(
-            $.proxy(that.restore_checkpoint_error, that)
-        );
+    Contents.prototype.restore_checkpoint = function(path, name, checkpoint_id, options) {
+        var file_id_prm = gapi_utils.gapi_ready
+        .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
+        .then(function(resource) { return resource['id']; })
+
+        var contents_prm = file_id_prm.then(function(file_id) {
+            var request = gapi.client.drive.revisions.get({
+                'fileId': file_id,
+                'revisionId': checkpoint_id
+            });
+            return gapi_utils.wrap_gapi_request(request);
+	})
+	.then(function(response) {
+            return gapi_utils.download(response['downloadUrl']);
+        })
+
+        $.when(file_id_prm, contents_prm)
+        .then(function(file_id, contents) {
+            return drive_utils.upload_to_drive(contents, {}, file_id);
+	})
+        .then(options.success, options.error);
     };
 
     Contents.prototype.list_checkpoints = function(path, name, options) {
-        options.error(new Error('checkpoints not implemented'));
+        gapi_utils.gapi_ready
+        .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
+        .then(function(resource) {
+            var file_id = resource['id'];
+            var request = gapi.client.drive.revisions.list({ 'fileId': file_id });
+            return gapi_utils.wrap_gapi_request(request);
+        })
+        .then(function(response) {
+            // TODO: filter out non-pinned revisions
+            return JSON.stringify(response['items']
+            .filter(function(item) { return item['pinned']; })
+            .map(function(item) {
+                return {
+                    last_modified: item['modifiedDate'],
+                    id: item['id'],
+                    drive_resource: item
+                };
+            }));
+	})
+        .then(options.success, options.error);
     };
 
     /**

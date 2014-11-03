@@ -7,11 +7,39 @@ define([
     'base/js/dialog',
     'base/js/utils',
 ], function(IPython, $, dialog, utils) {
+
     /**
-     * Authorization Utilities
-     *
-     * Utilities for doing OAuth flow with the Google API.
+     * Helper functions
      */
+
+
+    /**
+     * Perform an authenticated download.
+     * @param {string} url The download URL.
+     * @return {Promise} resolved with the contents of the file, or rejected
+     *     with an Error.
+     */
+    var download = function(url) {
+        var defer = $.Deferred();
+        // Sends request to load file to drive.
+        var token = gapi.auth.getToken().access_token;
+        var xhrRequest = new XMLHttpRequest();
+        xhrRequest.open('GET', url, true);
+        xhrRequest.setRequestHeader('Authorization', 'Bearer ' + token);
+        xhrRequest.onreadystatechange = function(e) {
+            if (xhrRequest.readyState == 4) {
+                if (xhrRequest.status == 200) {
+                    defer.resolve(xhrRequest.responseText);
+                } else {
+                    var error = new Error(xhrRequest.responseText);
+                    error.name = 'XhrError';
+                    defer.reject(error);
+                }
+            }
+        };
+        xhrRequest.send();
+        return defer.promise();
+    };
 
     /**
      * Wrap a Google API result as an error.  Returns null if the result does
@@ -52,11 +80,22 @@ define([
      */
     var wrap_gapi_request = function(request) {
         var defer = $.Deferred();
-        request.execute(defer.resolve, function(result) {
-            defer.reject(wrap_gapi_error(result));
+        request.execute(function(result) {
+            var error = wrap_gapi_error(result);
+            if (error) {
+                defer.reject(result);
+	    } else {
+                defer.resolve(result);
+	    }
         });
         return defer.promise();
     }
+
+    /**
+     * Authorization and Loading Google API
+     *
+     * Utilities for doing OAuth flow with the Google API.
+     */
 
     /**
      * (Internal use only) Returns a promise that is fullfilled when client
@@ -146,6 +185,7 @@ define([
     var gapi_ready = load_gapi_1().then(load_gapi_2).then(authorize);
 
     var drive_utils = {
+        download : download,
         wrap_gapi_request : wrap_gapi_request,
         gapi_ready : gapi_ready
     };
