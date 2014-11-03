@@ -84,38 +84,35 @@ define([
      * @param {Object} options Includes 'extension' - the extension to use if name not specified.
      */
     Contents.prototype.new = function(path, name, options) {
-        var that = this;
-        gapi_utils.gapi_ready
+        var folder_id_prm = gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path))
         // TODO: use name or extension if provided
-        .then(function(folder_id) {
-            return drive_utils.get_new_filename(folder_id)
-	    .then(function(filename) {
-                var data = {
-                    'worksheets': [{
-                        'cells' : [{
-                            'cell_type': 'code',
-                            'input': '',
-                            'outputs': [],
-                            'language': 'python',
-                            'metadata': {}
-                        }],
-                    }],
-                    'metadata': {
-                        'name': filename,
-                    },
-                    'nbformat': 3,
-                    'nbformat_minor': 0
-                };
-                var metadata = {
-                    'parents' : [{'id' : folder_id}],
-                    'title' : filename,
-                    'description': 'IP[y] file',
-                    'mimeType': drive_utils.NOTEBOOK_MIMETYPE
-                }
-                return drive_utils.upload_to_drive(JSON.stringify(data), metadata);
-            })
-	})
+        var filename_prm = folder_id_prm.then(drive_utils.get_new_filename);
+        $.when(folder_id_prm, filename_prm).then(function(folder_id, filename) {
+	    var data = {
+		'worksheets': [{
+		    'cells' : [{
+			'cell_type': 'code',
+			'input': '',
+			'outputs': [],
+			'language': 'python',
+			'metadata': {}
+		    }],
+		}],
+		'metadata': {
+		    'name': filename,
+		},
+		'nbformat': 3,
+		'nbformat_minor': 0
+	    };
+	    var metadata = {
+		'parents' : [{'id' : folder_id}],
+		'title' : filename,
+		'description': 'IP[y] file',
+		'mimeType': drive_utils.NOTEBOOK_MIMETYPE
+	    }
+	    return drive_utils.upload_to_drive(JSON.stringify(data), metadata);
+        })
         .then(function(response) {
             return {path: path, name: response['title'] };
         })
