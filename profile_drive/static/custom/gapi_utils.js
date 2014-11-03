@@ -85,7 +85,7 @@ define([
         request.execute(function(result) {
             var error = wrap_error(result);
             if (error) {
-                defer.reject(result);
+                defer.reject(error);
 	    } else {
                 defer.resolve(result);
 	    }
