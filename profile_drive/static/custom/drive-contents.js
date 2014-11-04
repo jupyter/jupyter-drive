@@ -40,9 +40,9 @@ define([
      */
     Contents.prototype.load = function (path, name, options) {
         gapi_utils.gapi_ready
-        .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
-        .then(function(response) {
-            return gapi_utils.download(response['downloadUrl']);
+        .then($.proxy(drive_utils.get_resource_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
+        .then(function(resource) {
+            return gapi_utils.download(resource['downloadUrl']);
          })
          .then(function(contents) {
              var model = JSON.parse(contents);
@@ -61,7 +61,7 @@ define([
      */
     Contents.prototype.new = function(path, name, options) {
         var folder_id_prm = gapi_utils.gapi_ready
-        .then($.proxy(drive_utils.get_id_for_path, this, path))
+        .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.Folder))
         // TODO: use name or extension if provided
         var filename_prm = folder_id_prm.then(drive_utils.get_new_filename);
         $.when(folder_id_prm, filename_prm).then(function(folder_id, filename) {
@@ -149,8 +149,7 @@ define([
     Contents.prototype.save = function(path, name, model, options) {
         var contents = JSON.stringify(model.content);
         drive_utils.get_id_for_path(path + '/' + name, drive_utils.FileType.FILE)
-        .then(function(resource) {
-            var file_id = resource['id'];
+        .then(function(file_id) {
             return drive_utils.upload_to_drive(contents, {}, file_id);
         })
         .then(options.success, options.error);
@@ -165,7 +164,6 @@ define([
     Contents.prototype.create_checkpoint = function(path, name, options) {
          var file_id_prm = gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
-        .then(function(resource) { return resource['id']; })
         .then(function(file_id) {
             var body = {'pinned': true};
             var request = gapi.client.drive.revisions.patch({
@@ -188,7 +186,6 @@ define([
     Contents.prototype.restore_checkpoint = function(path, name, checkpoint_id, options) {
         var file_id_prm = gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
-        .then(function(resource) { return resource['id']; })
 
         var contents_prm = file_id_prm.then(function(file_id) {
             var request = gapi.client.drive.revisions.get({
@@ -211,8 +208,7 @@ define([
     Contents.prototype.list_checkpoints = function(path, name, options) {
         gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
-        .then(function(resource) {
-            var file_id = resource['id'];
+        .then(function(file_id) {
             var request = gapi.client.drive.revisions.list({ 'fileId': file_id });
             return gapi_utils.execute(request);
         })
@@ -255,7 +251,7 @@ define([
     Contents.prototype.list_contents = function(path, options) {
         var that = this;
         gapi_utils.gapi_ready
-        .then($.proxy(drive_utils.get_id_for_path, this, path))
+        .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FOLDER))
 	.then(function(folder_id) {
 	    query = ('(fileExtension = \'ipynb\' or'
 		+ ' mimeType = \'' + drive_utils.FOLDER_MIME_TYPE + '\')'

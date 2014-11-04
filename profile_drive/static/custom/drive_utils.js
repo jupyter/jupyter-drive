@@ -30,62 +30,98 @@ define([
         FOLDER: 2
     };
 
+
     /**
-     * Gets the Google Drive file/folder ID corresponding to a path.  Since
-     * the Google Drive API doesn't expose a path structure, it is necessary
-     * to manually walk the path from root.
-     * @method get_id_for_path
+     * Obtains the Google Drive Files resource for a file or folder relative
+     * to the a given folder.  The path should be a file or a subfolder, and
+     * should not contain multiple levels of folders (hence the name
+     * path_component).  It should also not contain any leading or trailing
+     * slashes.
+     *
+     * @param {String} path_component The file/folder to find
+     * @param {FileType} type type of resource (file or folder)
+     * @param {String} folder_id The Google Drive folder id
+     * @param {boolean} opt_child_resource If True, fetches a child resource
+     *     which is smaller and probably quicker to obtain the a Files resource.
+     * @return A promise fullfilled by either the files resource for the given
+     *     file/folder, or rejected with an Error object.
+     */
+    var get_resource_for_relative_path = function(path_component, type, opt_child_resource, folder_id) {
+        var query = 'title = \'' + path_component + '\' and trashed = false ';
+        if (type == FileType.FOLDER) {
+	    query += ' and mimeType = \'' + FOLDER_MIME_TYPE + '\'';
+	}
+        var request = null;
+        if (opt_child_resource) {
+            request = gapi.client.drive.children.list({'q': query, 'folderId' : folder_id});
+        } else {
+	    query += ' and \'' + folder_id + '\' in parents';
+    	    request = gapi.client.drive.files.list({'q': query});
+	}
+	return gapi_utils.execute(request)
+	.then(function(response) {
+	    var files = response['items'];
+	    if (!files || files.length == 0) {
+		var error = new Error('The specified file/folder did not exist: ' + path_component);
+		error.name = 'NotFoundError';
+		return $.Deferred().reject(error).promise();
+	    }
+	    if (files.length > 1) {
+		var error = new Error('Multiple files/folders with the given name existed: ' + path_component);
+		error.name = 'BadNameError';
+		return $.Deferred().reject(error).promise();
+	    }
+            return files[0];
+	})
+    };
+
+    /**
+     * Gets the Google Drive Files resource corresponding to a path.  The path
+     * is always treated as an absolute path, no matter whether it contains
+     * leading or trailing slashes.  In fact, all leading, trailing and
+     * consecutive slashes are ignored.
+     *
+     * @param {String} path The path
+     * @param {FileType} type The type (file or folder)
+     * @return {Promise} fullfilled with file/folder id (string) on success
+     *     or Error object on error.
+     */
+    var get_resource_for_path = function(path, type) {
+        var components = path.split('/').filter(function(c) { return c;});
+        if (components.length == 0) {
+            return $.Deferred.reject(new Error('Cannot get root resource')).promise();
+        }
+        var result = $.Deferred().resolve({id: 'root'});
+	for (var i = 0; i < components.length; i++) {
+  	    var component = components[i];
+            var t = (i == components.length - 1) ? type : FileType.FOLDER;
+            var child_resource = i < components.length - 1;
+            result = result.then(function(resource) { return resource['id']; });
+            result = result.then($.proxy(get_resource_for_relative_path, this,
+					 component, t, child_resource));
+	};
+        return result;
+    }
+
+
+    /**
+     * Gets the Google Drive file/folder ID for a file or folder.  The path is
+     * always treated as an absolute path, no matter whether it contains leading
+     * or trailing slashes.  In fact, all leading, trailing and consecutive
+     * slashes are ignored.
+     *
      * @param {String} path The path
      * @param {FileType} type The type (file or folder)
      * @return {Promise} fullfilled with folder id (string) on success
      *     or Error object on error.
      */
     var get_id_for_path = function(path, type) {
-        type = type || FileType.FOLDER; // is this bad style for enums?
-        function get_id_for_relative_path(component, type, base_id) {
-            var query = 'title = \'' + component + '\' and trashed = false';
-            var request = null;
-            if (type == FileType.FILE) {
-                query += ' and \'' + base_id + '\' in parents';
-                request = gapi.client.drive.files.list({
-                    'q': query
-                });
-	    } else if (type == FileType.FOLDER) {
-                query += ' and mimeType = \'' + FOLDER_MIME_TYPE + '\'';
-	        request = gapi.client.drive.children.list({
-                    'folderId': base_id,
-                    'q': query
-                });
-            }
-            return gapi_utils.execute(request)
-            .then(function(response) {
-                var children = response['items'];
-		if (!children || children.length == 0) {
-		    var error = new Error('The specified file/folder did not exist: ' + component);
-                    error.name = 'NotFoundError';
-		    return $.Deferred().reject(error).promise();
-		}
-		if (children.length > 1) {
-		    var error = new Error('Multiple files/folders with the given name existed: ' + component);
-                    error.name = 'BadNameError';
-		    return $.Deferred().reject(error).promise();
-		}
-		if (type == FileType.FILE) {
-		    return children[0];
-		} else {
-		    return children[0]['id'];
-		}
-	    });
-        };
-        var result = $.Deferred().resolve('root');
-        var components = path.split('/');
-        for(var i = 0; i < components.length; i++) {
-            var c = components[i];
-            var t = (i == components.length - 1) ? type : FileType.FOLDER;
-            if (c === '') { continue; }
-            result = result.then($.proxy(get_id_for_relative_path, this, c, t));
-	};
-        return result;
+        var components = path.split('/').filter(function(c) { return c;});
+        if (components.length == 0) {
+            return $.Deferred().resolve('root');
+	}
+        return get_resource_for_path(path, type)
+            .then(function(resource) { return resource['id']; });
     }
 
 
@@ -197,6 +233,7 @@ define([
         NOTEBOOK_MIMETYPE : NOTEBOOK_MIMETYPE,
         FileType : FileType,
         get_id_for_path : get_id_for_path,
+        get_resource_for_path : get_resource_for_path,
         get_new_filename : get_new_filename,
         upload_to_drive : upload_to_drive
     }

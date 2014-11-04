@@ -23,22 +23,8 @@ define([
         var defer = $.Deferred();
         // Sends request to load file to drive.
         var token = gapi.auth.getToken().access_token;
-        var xhrRequest = new XMLHttpRequest();
-        xhrRequest.open('GET', url, true);
-        xhrRequest.setRequestHeader('Authorization', 'Bearer ' + token);
-        xhrRequest.onreadystatechange = function(e) {
-            if (xhrRequest.readyState == 4) {
-                if (xhrRequest.status == 200) {
-                    defer.resolve(xhrRequest.responseText);
-                } else {
-                    var error = new Error(xhrRequest.responseText);
-                    error.name = 'XhrError';
-                    defer.reject(error);
-                }
-            }
-        };
-        xhrRequest.send();
-        return defer.promise();
+        var request = $.ajax(url, { headers: { 'Authorization': 'Bearer ' + token } } )
+        return request.then(null, utils.wrap_ajax_error);
     };
 
     /**
