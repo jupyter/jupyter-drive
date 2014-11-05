@@ -24,7 +24,9 @@ define([
         // Sends request to load file to drive.
         var token = gapi.auth.getToken().access_token;
         var request = $.ajax(url, { headers: { 'Authorization': 'Bearer ' + token } } )
-        return request.then(null, utils.wrap_ajax_error);
+        return request.then(function(data, textStatus, jqXHR) {
+	    return data;
+        }, utils.wrap_ajax_error);
     };
 
     /**

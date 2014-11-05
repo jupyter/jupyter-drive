@@ -21,6 +21,14 @@ define([
         //      Dictionary of keyword arguments.
         //          base_url: string
         this.base_url = options.base_url;
+
+        /**
+         * Used to store the revision id from the last save.  This is used
+         * in checkpointing, so that when create_checkpoint is called, it
+         * creates a checkpoint for that file.  It is a map from file ids
+         * to revision ids, and is updated on each successful save to a file.
+         */
+        this.last_revision = {};
     };
 
     /**
@@ -147,11 +155,16 @@ define([
     };
 
     Contents.prototype.save = function(path, name, model, options) {
+        var that = this;
         var contents = JSON.stringify(model.content);
         drive_utils.get_id_for_path(path + '/' + name, drive_utils.FileType.FILE)
         .then(function(file_id) {
             return drive_utils.upload_to_drive(contents, {}, file_id);
         })
+        .then(function(resource) {
+     	    that.last_revision[resource['id']] = resource['headRevisionId'];
+            return {};
+	})
         .then(options.success, options.error);
     };
 
@@ -162,13 +175,18 @@ define([
     // NOTE: it would be better modify the API to combine create_checkpoint with
     // save
     Contents.prototype.create_checkpoint = function(path, name, options) {
-         var file_id_prm = gapi_utils.gapi_ready
+        var that = this;
+        var file_id_prm = gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
         .then(function(file_id) {
+  	    var revision_id = that.last_revision[file_id];
+	    if (!revision_id) {
+  	        return $.Deferred().fail(new Error('File must be saved before checkpointing'));
+	    }
             var body = {'pinned': true};
             var request = gapi.client.drive.revisions.patch({
                 'fileId': file_id,
-                'revisionId': 'head',
+                'revisionId': revision_id,
                 'resource': body
             });
             return gapi_utils.execute(request);
@@ -200,6 +218,7 @@ define([
 
         $.when(file_id_prm, contents_prm)
         .then(function(file_id, contents) {
+            console.log(contents);
             return drive_utils.upload_to_drive(contents, {}, file_id);
 	})
         .then(options.success, options.error);
