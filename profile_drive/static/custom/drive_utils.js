@@ -49,30 +49,30 @@ define([
     var get_resource_for_relative_path = function(path_component, type, opt_child_resource, folder_id) {
         var query = 'title = \'' + path_component + '\' and trashed = false ';
         if (type == FileType.FOLDER) {
-	    query += ' and mimeType = \'' + FOLDER_MIME_TYPE + '\'';
-	}
+            query += ' and mimeType = \'' + FOLDER_MIME_TYPE + '\'';
+        }
         var request = null;
         if (opt_child_resource) {
             request = gapi.client.drive.children.list({'q': query, 'folderId' : folder_id});
         } else {
-	    query += ' and \'' + folder_id + '\' in parents';
-    	    request = gapi.client.drive.files.list({'q': query});
-	}
-	return gapi_utils.execute(request)
-	.then(function(response) {
-	    var files = response['items'];
-	    if (!files || files.length == 0) {
-		var error = new Error('The specified file/folder did not exist: ' + path_component);
-		error.name = 'NotFoundError';
-		return $.Deferred().reject(error).promise();
-	    }
-	    if (files.length > 1) {
-		var error = new Error('Multiple files/folders with the given name existed: ' + path_component);
-		error.name = 'BadNameError';
-		return $.Deferred().reject(error).promise();
-	    }
+            query += ' and \'' + folder_id + '\' in parents';
+            request = gapi.client.drive.files.list({'q': query});
+        }
+        return gapi_utils.execute(request)
+        .then(function(response) {
+            var files = response['items'];
+            if (!files || files.length == 0) {
+                var error = new Error('The specified file/folder did not exist: ' + path_component);
+                error.name = 'NotFoundError';
+                return $.Deferred().reject(error).promise();
+            }
+            if (files.length > 1) {
+                var error = new Error('Multiple files/folders with the given name existed: ' + path_component);
+                error.name = 'BadNameError';
+                return $.Deferred().reject(error).promise();
+            }
             return files[0];
-	})
+        })
     };
 
     /**
@@ -92,14 +92,14 @@ define([
             return $.Deferred.reject(new Error('Cannot get root resource')).promise();
         }
         var result = $.Deferred().resolve({id: 'root'});
-	for (var i = 0; i < components.length; i++) {
-  	    var component = components[i];
+        for (var i = 0; i < components.length; i++) {
+            var component = components[i];
             var t = (i == components.length - 1) ? type : FileType.FOLDER;
             var child_resource = i < components.length - 1;
             result = result.then(function(resource) { return resource['id']; });
             result = result.then($.proxy(get_resource_for_relative_path, this,
-					 component, t, child_resource));
-	};
+                                         component, t, child_resource));
+        };
         return result;
     }
 
@@ -119,7 +119,7 @@ define([
         var components = path.split('/').filter(function(c) { return c;});
         if (components.length == 0) {
             return $.Deferred().resolve('root');
-	}
+        }
         return get_resource_for_path(path, type)
             .then(function(resource) { return resource['id']; });
     }

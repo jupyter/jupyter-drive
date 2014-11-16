@@ -73,29 +73,29 @@ define([
         // TODO: use name or extension if provided
         var filename_prm = folder_id_prm.then(drive_utils.get_new_filename);
         $.when(folder_id_prm, filename_prm).then(function(folder_id, filename) {
-	    var data = {
-		'worksheets': [{
-		    'cells' : [{
-			'cell_type': 'code',
-			'input': '',
-			'outputs': [],
-			'language': 'python',
-			'metadata': {}
-		    }],
-		}],
-		'metadata': {
-		    'name': filename,
-		},
-		'nbformat': 3,
-		'nbformat_minor': 0
-	    };
-	    var metadata = {
-		'parents' : [{'id' : folder_id}],
-		'title' : filename,
-		'description': 'IP[y] file',
-		'mimeType': drive_utils.NOTEBOOK_MIMETYPE
-	    }
-	    return drive_utils.upload_to_drive(JSON.stringify(data), metadata);
+            var data = {
+                'worksheets': [{
+                    'cells' : [{
+                        'cell_type': 'code',
+                        'input': '',
+                        'outputs': [],
+                        'language': 'python',
+                        'metadata': {}
+                    }],
+                }],
+                'metadata': {
+                    'name': filename,
+                },
+                'nbformat': 3,
+                'nbformat_minor': 0
+            };
+            var metadata = {
+                'parents' : [{'id' : folder_id}],
+                'title' : filename,
+                'description': 'IP[y] file',
+                'mimeType': drive_utils.NOTEBOOK_MIMETYPE
+            }
+            return drive_utils.upload_to_drive(JSON.stringify(data), metadata);
         })
         .then(function(response) {
             return {path: path, name: response['title'] };
@@ -162,9 +162,9 @@ define([
             return drive_utils.upload_to_drive(contents, {}, file_id);
         })
         .then(function(resource) {
-     	    that.last_revision[resource['id']] = resource['headRevisionId'];
+            that.last_revision[resource['id']] = resource['headRevisionId'];
             return {};
-	})
+        })
         .then(options.success, options.error);
     };
 
@@ -179,10 +179,10 @@ define([
         var file_id_prm = gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
         .then(function(file_id) {
-  	    var revision_id = that.last_revision[file_id];
-	    if (!revision_id) {
-  	        return $.Deferred().fail(new Error('File must be saved before checkpointing'));
-	    }
+            var revision_id = that.last_revision[file_id];
+            if (!revision_id) {
+                return $.Deferred().fail(new Error('File must be saved before checkpointing'));
+            }
             var body = {'pinned': true};
             var request = gapi.client.drive.revisions.patch({
                 'fileId': file_id,
@@ -190,13 +190,13 @@ define([
                 'resource': body
             });
             return gapi_utils.execute(request);
-	})
+        })
         .then(function(item) {
             return JSON.stringify({
                 last_modified: item['modifiedDate'],
                 id: item['id'],
                 drive_resource: item
-	    });
+            });
         })
         .then(options.success, options.error);
     };
@@ -211,8 +211,8 @@ define([
                 'revisionId': checkpoint_id
             });
             return gapi_utils.execute(request);
-	})
-	.then(function(response) {
+        })
+        .then(function(response) {
             return gapi_utils.download(response['downloadUrl']);
         })
 
@@ -220,7 +220,7 @@ define([
         .then(function(file_id, contents) {
             console.log(contents);
             return drive_utils.upload_to_drive(contents, {}, file_id);
-	})
+        })
         .then(options.success, options.error);
     };
 
@@ -242,7 +242,7 @@ define([
                     drive_resource: item
                 };
             }));
-	})
+        })
         .then(options.success, options.error);
     };
 
@@ -271,35 +271,35 @@ define([
         var that = this;
         gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FOLDER))
-	.then(function(folder_id) {
-	    query = ('(fileExtension = \'ipynb\' or'
-		+ ' mimeType = \'' + drive_utils.FOLDER_MIME_TYPE + '\')'
-		+ ' and \'' + folder_id + '\' in parents'
-		+ ' and trashed = false');
-	    var request = gapi.client.drive.files.list({
-		'maxResults' : 1000,
-		'q' : query
-	    });
-	    return gapi_utils.execute(request);
-	})
-	.then(function(response) {
-	    // Convert this list to the format that is passed to
-	    // load_callback.  Note that a files resource can represent
-	    // a file or a directory.
-	    // TODO: check that date formats are the same, and either
-	    // convert to the IPython format, or document the difference.
-	    var list = $.map(response['items'], function(files_resource) {
-		var type = files_resource['mimeType'] == drive_utils.FOLDER_MIME_TYPE ? 'directory' : 'notebook';
-		return {
-		    type: type,
-		    name: files_resource['title'],
-		    path: path,
-		    created: files_resource['createdDate'],
-		    last_modified: files_resource['modifiedDate']
-		};
-	    });
-	    return {content: list};
-	})
+        .then(function(folder_id) {
+            query = ('(fileExtension = \'ipynb\' or'
+                + ' mimeType = \'' + drive_utils.FOLDER_MIME_TYPE + '\')'
+                + ' and \'' + folder_id + '\' in parents'
+                + ' and trashed = false');
+            var request = gapi.client.drive.files.list({
+                'maxResults' : 1000,
+                'q' : query
+            });
+            return gapi_utils.execute(request);
+        })
+        .then(function(response) {
+            // Convert this list to the format that is passed to
+            // load_callback.  Note that a files resource can represent
+            // a file or a directory.
+            // TODO: check that date formats are the same, and either
+            // convert to the IPython format, or document the difference.
+            var list = $.map(response['items'], function(files_resource) {
+                var type = files_resource['mimeType'] == drive_utils.FOLDER_MIME_TYPE ? 'directory' : 'notebook';
+                return {
+                    type: type,
+                    name: files_resource['title'],
+                    path: path,
+                    created: files_resource['createdDate'],
+                    last_modified: files_resource['modifiedDate']
+                };
+            });
+            return {content: list};
+        })
         .then(options.success, options.error);;
     };
 
