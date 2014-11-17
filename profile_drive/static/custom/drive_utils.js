@@ -64,15 +64,15 @@ define([
             if (!files || files.length == 0) {
                 var error = new Error('The specified file/folder did not exist: ' + path_component);
                 error.name = 'NotFoundError';
-                return $.Deferred().reject(error).promise();
+                raise error;
             }
             if (files.length > 1) {
                 var error = new Error('Multiple files/folders with the given name existed: ' + path_component);
                 error.name = 'BadNameError';
-                return $.Deferred().reject(error).promise();
+                raise error;
             }
             return files[0];
-        })
+        });
     };
 
     /**
@@ -89,7 +89,7 @@ define([
     var get_resource_for_path = function(path, type) {
         var components = path.split('/').filter(function(c) { return c;});
         if (components.length == 0) {
-            return $.Deferred.reject(new Error('Cannot get root resource')).promise();
+            return Promise.reject(new Error('Cannot get root resource'));
         }
         var result = $.Deferred().resolve({id: 'root'});
         for (var i = 0; i < components.length; i++) {
@@ -174,7 +174,7 @@ define([
             // Control should not reach this point, so an error has occured
             return fallbackFilename;
         })
-        .then(null, function(error) { return $.Deferred().resolve(fallbackFilename).promise(); });
+        .catch(function(error) { return Promise.resolve(fallbackFilename); });
     };
 
 

@@ -71,7 +71,7 @@ define([
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.Folder))
         // TODO: use name or extension if provided
         var filename_prm = folder_id_prm.then(drive_utils.get_new_filename);
-        return $.when(folder_id_prm, filename_prm).then(function(folder_id, filename) {
+        return Promise.all(folder_id_prm, filename_prm).then(function(folder_id, filename) {
             var data = {
                 'worksheets': [{
                     'cells' : [{
