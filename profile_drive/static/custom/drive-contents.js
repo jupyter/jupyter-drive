@@ -47,7 +47,7 @@ define([
      * @param {Object} options
      */
     Contents.prototype.load = function (path, name, options) {
-        gapi_utils.gapi_ready
+        return gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_resource_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
         .then(function(resource) {
             return gapi_utils.download(resource['downloadUrl']);
@@ -55,8 +55,7 @@ define([
          .then(function(contents) {
              var model = JSON.parse(contents);
              return {content: model, name: model.metadata.name};
-         })
-        .then(options.success, options.error);
+         });
     };
 
     /**
@@ -72,7 +71,7 @@ define([
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.Folder))
         // TODO: use name or extension if provided
         var filename_prm = folder_id_prm.then(drive_utils.get_new_filename);
-        $.when(folder_id_prm, filename_prm).then(function(folder_id, filename) {
+        return $.when(folder_id_prm, filename_prm).then(function(folder_id, filename) {
             var data = {
                 'worksheets': [{
                     'cells' : [{
@@ -99,8 +98,7 @@ define([
         })
         .then(function(response) {
             return {path: path, name: response['title'] };
-        })
-        .then(options.success, options.error);
+        });
     };
 
     Contents.prototype.delete_notebook = function(name, path) {
@@ -157,15 +155,14 @@ define([
     Contents.prototype.save = function(path, name, model, options) {
         var that = this;
         var contents = JSON.stringify(model.content);
-        drive_utils.get_id_for_path(path + '/' + name, drive_utils.FileType.FILE)
+        return drive_utils.get_id_for_path(path + '/' + name, drive_utils.FileType.FILE)
         .then(function(file_id) {
             return drive_utils.upload_to_drive(contents, {}, file_id);
         })
         .then(function(resource) {
             that.last_revision[resource['id']] = resource['headRevisionId'];
             return {};
-        })
-        .then(options.success, options.error);
+        });
     };
 
     /**
@@ -176,7 +173,7 @@ define([
     // save
     Contents.prototype.create_checkpoint = function(path, name, options) {
         var that = this;
-        var file_id_prm = gapi_utils.gapi_ready
+        return gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
         .then(function(file_id) {
             var revision_id = that.last_revision[file_id];
@@ -197,8 +194,7 @@ define([
                 id: item['id'],
                 drive_resource: item
             });
-        })
-        .then(options.success, options.error);
+        });
     };
 
     Contents.prototype.restore_checkpoint = function(path, name, checkpoint_id, options) {
@@ -216,16 +212,15 @@ define([
             return gapi_utils.download(response['downloadUrl']);
         })
 
-        $.when(file_id_prm, contents_prm)
+        return $.when(file_id_prm, contents_prm)
         .then(function(file_id, contents) {
             console.log(contents);
             return drive_utils.upload_to_drive(contents, {}, file_id);
-        })
-        .then(options.success, options.error);
+        });
     };
 
     Contents.prototype.list_checkpoints = function(path, name, options) {
-        gapi_utils.gapi_ready
+        return gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
         .then(function(file_id) {
             var request = gapi.client.drive.revisions.list({ 'fileId': file_id });
@@ -242,8 +237,7 @@ define([
                     drive_resource: item
                 };
             }));
-        })
-        .then(options.success, options.error);
+        });
     };
 
     /**
@@ -269,7 +263,7 @@ define([
      */
     Contents.prototype.list_contents = function(path, options) {
         var that = this;
-        gapi_utils.gapi_ready
+        return gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FOLDER))
         .then(function(folder_id) {
             query = ('(fileExtension = \'ipynb\' or'
@@ -299,8 +293,7 @@ define([
                 };
             });
             return {content: list};
-        })
-        .then(options.success, options.error);;
+        });
     };
 
 
