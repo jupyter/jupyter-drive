@@ -107,7 +107,7 @@ define([
      * @return {Promise} empty value on success or error on failure.
      */
     var load_gapi_1 = function() {
-        return $.getScript('https://apis.google.com/js/client.js')
+        return Promise.resolve($.getScript('https://apis.google.com/js/client.js'))
         .then(function() {
             // poll every 100ms until window.gapi and gapi.client exist.
             return poll(function() { return !!(window.gapi && gapi.client); }, 100);
@@ -118,7 +118,7 @@ define([
      * (Internal use only) Returns a promise fullfilled when client library
      * loads.
      */
-    var load_gapi_2 = function() {
+    var load_gapi_2 = function(d) {
         return new Promise(function(resolve, reject) {
             gapi.load('auth:client,drive-realtime,drive-share', function() {
                 gapi.client.load('drive', 'v2', resolve);

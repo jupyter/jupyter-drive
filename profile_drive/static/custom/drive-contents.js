@@ -46,41 +46,39 @@ define([
      * @param {String} name
      * @param {Object} options
      */
-    Contents.prototype.load = function (path, name, options) {
+    Contents.prototype.get = function (path, type, options) {
         return gapi_utils.gapi_ready
-        .then($.proxy(drive_utils.get_resource_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
+        .then($.proxy(drive_utils.get_resource_for_path, this, path, drive_utils.FileType.FILE))
         .then(function(resource) {
             return gapi_utils.download(resource['downloadUrl']);
          })
          .then(function(contents) {
              var model = JSON.parse(contents);
-             return {content: model, name: model.metadata.name};
+             return {content: model, name: model.metadata.name, path:path};
          });
     };
 
     /**
      * Creates a new file at the specified directory path.
      *
-     * @method new
+     * @method new_untitled
      * @param {String} path The directory in which to create the new file
-     * @param {String} name The name of the file to create. Server picks if unspecified.
      * @param {Object} options Includes 'extension' - the extension to use if name not specified.
      */
-    Contents.prototype.new = function(path, name, options) {
+    Contents.prototype.new_untitled = function(path, options) {
         var folder_id_prm = gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.Folder))
-        // TODO: use name or extension if provided
         var filename_prm = folder_id_prm.then(drive_utils.get_new_filename);
-        return Promise.all(folder_id_prm, filename_prm).then(function(folder_id, filename) {
+        return Promise.all([folder_id_prm, filename_prm]).then(function(values) {
+	    var folder_id = values[0];
+	    var filename = values[1];
             var data = {
-                'worksheets': [{
-                    'cells' : [{
-                        'cell_type': 'code',
-                        'input': '',
-                        'outputs': [],
-                        'language': 'python',
-                        'metadata': {}
-                    }],
+                'cells' : [{
+                    'cell_type': 'code',
+                    'input': '',
+                    'outputs': [],
+                    'language': 'python',
+                    'metadata': {}
                 }],
                 'metadata': {
                     'name': filename,
@@ -98,7 +96,8 @@ define([
         })
         .then(function(response) {
             return {path: path, name: response['title'] };
-        });
+        })
+	.catch(function(err) {console.log(err)});
     };
 
     Contents.prototype.delete_notebook = function(name, path) {
@@ -152,10 +151,10 @@ define([
         $.ajax(url, settings);
     };
 
-    Contents.prototype.save = function(path, name, model, options) {
+    Contents.prototype.save = function(path, model, options) {
         var that = this;
         var contents = JSON.stringify(model.content);
-        return drive_utils.get_id_for_path(path + '/' + name, drive_utils.FileType.FILE)
+        return drive_utils.get_id_for_path(path, drive_utils.FileType.FILE)
         .then(function(file_id) {
             return drive_utils.upload_to_drive(contents, {}, file_id);
         })
@@ -174,11 +173,11 @@ define([
     Contents.prototype.create_checkpoint = function(path, name, options) {
         var that = this;
         return gapi_utils.gapi_ready
-        .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
+        .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FILE))
         .then(function(file_id) {
             var revision_id = that.last_revision[file_id];
             if (!revision_id) {
-                return $.Deferred().fail(new Error('File must be saved before checkpointing'));
+                return Promise.reject(new Error('File must be saved before checkpointing'));
             }
             var body = {'pinned': true};
             var request = gapi.client.drive.revisions.patch({
@@ -287,7 +286,7 @@ define([
                 return {
                     type: type,
                     name: files_resource['title'],
-                    path: path,
+                    path: path + '/' + files_resource['title'],
                     created: files_resource['createdDate'],
                     last_modified: files_resource['modifiedDate']
                 };

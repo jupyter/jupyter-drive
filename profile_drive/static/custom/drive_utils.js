@@ -64,12 +64,12 @@ define([
             if (!files || files.length == 0) {
                 var error = new Error('The specified file/folder did not exist: ' + path_component);
                 error.name = 'NotFoundError';
-                raise error;
+                throw error;
             }
             if (files.length > 1) {
                 var error = new Error('Multiple files/folders with the given name existed: ' + path_component);
                 error.name = 'BadNameError';
-                raise error;
+                throw error;
             }
             return files[0];
         });
@@ -91,7 +91,7 @@ define([
         if (components.length == 0) {
             return Promise.reject(new Error('Cannot get root resource'));
         }
-        var result = $.Deferred().resolve({id: 'root'});
+        var result = Promise.resolve({id: 'root'});
         for (var i = 0; i < components.length; i++) {
             var component = components[i];
             var t = (i == components.length - 1) ? type : FileType.FOLDER;
