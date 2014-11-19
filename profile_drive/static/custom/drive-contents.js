@@ -127,12 +127,10 @@ define([
 
 
     Contents.prototype.delete = function(path) {
-        var prom = drive_utils.get_id_for_path(path, drive_utils.FileType.FILE)
+        return drive_utils.get_id_for_path(path, drive_utils.FileType.FILE)
         .then(function(file_id){
             return gapi.client.drive.files.delete({'fileId': file_id});
-        }
-        )
-        return prom
+        })
     };
 
     Contents.prototype.rename_notebook = function(path, name, new_name) {
