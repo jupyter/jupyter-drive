@@ -9,6 +9,8 @@ define([
     'custom/gapi_utils',
     'custom/drive_utils',
 ], function(IPython, $, utils, dialog, gapi_utils, drive_utils) {
+    "use strict";
+
     var Contents = function(options) {
         // Constructor
         //
@@ -123,6 +125,16 @@ define([
         $.ajax(url, settings);
     };
 
+
+    Contents.prototype.delete = function(path) {
+        var prom = drive_utils.get_id_for_path(path, drive_utils.FileType.FILE)
+        .then(function(file_id){
+            return gapi.client.drive.files.delete({'fileId': file_id});
+        }
+        )
+        return prom
+    };
+
     Contents.prototype.rename_notebook = function(path, name, new_name) {
         var that = this;
         var data = {name: new_name};
@@ -180,6 +192,7 @@ define([
                 return Promise.reject(new Error('File must be saved before checkpointing'));
             }
             var body = {'pinned': true};
+            var gapi = window.gapi;
             var request = gapi.client.drive.revisions.patch({
                 'fileId': file_id,
                 'revisionId': revision_id,
@@ -265,7 +278,7 @@ define([
         return gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FOLDER))
         .then(function(folder_id) {
-            query = ('(fileExtension = \'ipynb\' or'
+            var query = ('(fileExtension = \'ipynb\' or'
                 + ' mimeType = \'' + drive_utils.FOLDER_MIME_TYPE + '\')'
                 + ' and \'' + folder_id + '\' in parents'
                 + ' and trashed = false');
