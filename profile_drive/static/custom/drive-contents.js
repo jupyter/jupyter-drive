@@ -129,8 +129,8 @@ define([
     Contents.prototype.delete = function(path) {
         return drive_utils.get_id_for_path(path, drive_utils.FileType.FILE)
         .then(function(file_id){
-            return gapi.client.drive.files.delete({'fileId': file_id});
-        })
+            return gapi_utils.execute(gapi.client.drive.files.delete({'fileId': file_id}));
+        });
     };
 
     Contents.prototype.rename_notebook = function(path, name, new_name) {
@@ -190,7 +190,6 @@ define([
                 return Promise.reject(new Error('File must be saved before checkpointing'));
             }
             var body = {'pinned': true};
-            var gapi = window.gapi;
             var request = gapi.client.drive.revisions.patch({
                 'fileId': file_id,
                 'revisionId': revision_id,
