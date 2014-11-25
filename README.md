@@ -4,3 +4,8 @@ This repository contains a custom Contents class that allows IPython to use Goog
 ```
 IPYTHONDIR=. ipython notebook --profile=drive
 ```
+
+You can also permanently link the `profile_drive` folder into your Jupyter/IPython profile directory, or recursively copy the
+content into one of your vavorite profile. The configuration of IPython/Jupyter is done through the `.json` file in the profile
+situated in the profile and will take precedence on configuration done in `.py` files, though you can still use non conflicting
+options.
