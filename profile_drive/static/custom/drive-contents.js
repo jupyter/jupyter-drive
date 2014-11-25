@@ -9,6 +9,8 @@ define([
     'custom/gapi_utils',
     'custom/drive_utils',
 ], function(IPython, $, utils, dialog, gapi_utils, drive_utils) {
+    "use strict";
+
     var Contents = function(options) {
         // Constructor
         //
@@ -121,6 +123,14 @@ define([
             name
         );
         $.ajax(url, settings);
+    };
+
+
+    Contents.prototype.delete = function(path) {
+        return drive_utils.get_id_for_path(path, drive_utils.FileType.FILE)
+        .then(function(file_id){
+            return gapi_utils.execute(gapi.client.drive.files.delete({'fileId': file_id}));
+        });
     };
 
     Contents.prototype.rename_notebook = function(path, name, new_name) {
@@ -265,7 +275,7 @@ define([
         return gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FOLDER))
         .then(function(folder_id) {
-            query = ('(fileExtension = \'ipynb\' or'
+            var query = ('(fileExtension = \'ipynb\' or'
                 + ' mimeType = \'' + drive_utils.FOLDER_MIME_TYPE + '\')'
                 + ' and \'' + folder_id + '\' in parents'
                 + ' and trashed = false');

@@ -6,6 +6,7 @@ define([
     'jquery',
     'custom/gapi_utils',
 ], function(IPython, $, gapi_utils) {
+    "use strict";
     var FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
 
     /**
