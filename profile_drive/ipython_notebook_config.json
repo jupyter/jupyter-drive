@@ -1,4 +1,5 @@
 {
+  "version" : 1,
   "NotebookApp":{
     "tornado_settings": {"contents_js_source": "custom/drive-contents"}, 
     "contents_manager_class": "IPython.html.services.contents.clientsidenbmanager.ClientSideContentsManager"
