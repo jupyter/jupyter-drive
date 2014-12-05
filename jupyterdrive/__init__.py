@@ -13,7 +13,7 @@ import io
 from IPython.config import Config, JSONFileConfigLoader, ConfigFileNotFound
 
 
-def install(profile='default', symlink=False):
+def install(profile='default', symlink=True):
     dname = os.path.dirname(__file__)
     # miht want to check if already installed and overwrite if exist
     nbe.install_nbextension(os.path.join(dname,'gdrive'), symlink=symlink)

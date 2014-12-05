@@ -31,6 +31,10 @@ The configuration of IPython/Jupyter is done through the `.json` file in the
 profile situated in the profile and will take precedence on configuration done
 in `.py` files, though you can still use non conflicting options.
 
+Note that the `gdrive` folder is actually symlinked into nbextension while this
+project is in developpement.
+
+
 # First launch
 
 On first launch the application will ask you for the authorisation to access
