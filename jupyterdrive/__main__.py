@@ -1,0 +1,2 @@
+import jupyterdrive
+jupyterdrive.install()

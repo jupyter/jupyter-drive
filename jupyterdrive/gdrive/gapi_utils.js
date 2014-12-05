@@ -1,13 +1,12 @@
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
 
-define([
-    'base/js/namespace',
-    'jquery',
-    'base/js/dialog',
-    'base/js/utils',
-], function(IPython, $, dialog, utils) {
+define(function(require) {
 
+    var IPython = require('base/js/namespace');
+    var $ = require('jquery');
+    var dialog = require('base/js/dialog');
+    var utils = require('base/js/utils');
     /**
      * Helper functions
      */

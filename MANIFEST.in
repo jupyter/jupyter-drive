@@ -1,0 +1,7 @@
+include DESCRIPTION.rst
+
+# Include the test suite (FIXME: does not work yet)
+# recursive-include tests *
+
+include jupyter-drive/*.json
+include jupyter-drive/gdrive/*.js

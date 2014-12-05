@@ -1,12 +1,13 @@
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
 
-define([
-    'base/js/namespace',
-    'jquery',
-    'custom/gapi_utils',
-], function(IPython, $, gapi_utils) {
+define(function(require) {
     "use strict";
+
+    var IPython =    require('base/js/namespace');
+    var jquery =     require('jquery');
+    var gapi_utils = require('./gapi_utils');
+
     var FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
 
     /**

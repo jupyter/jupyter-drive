@@ -1,15 +1,16 @@
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
-
-define([
-    'base/js/namespace',
-    'jquery',
-    'base/js/utils',
-    'base/js/dialog',
-    'custom/gapi_utils',
-    'custom/drive_utils',
-], function(IPython, $, utils, dialog, gapi_utils, drive_utils) {
+//
+define(function(require) {
     "use strict";
+
+    var IPython = require('base/js/namespace');
+    var $ = require('jquery');
+    var utils = require('base/js/utils');
+    var dialog = require('base/js/dialog');
+    var gapi_utils = require('./gapi_utils');
+    var drive_utils = require('./drive_utils');
+
 
     var Contents = function(options) {
         // Constructor
