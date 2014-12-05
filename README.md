@@ -39,13 +39,13 @@ the files it has created.
 
 The request pop-up look like the following:
 
-![](img.auth.png)
+![](img/auth.png)
 
 Clicking ok will open a google auth pop-up, you will see that the application
 name appear to be `coLaboratory`. Keep that in mind if you want to revoke access
 at a later point.
 
-![](popup.png)
+![](img/popup.png)
 
 Once you click `Accept` you should be able to start creating new notebooks on
 your google drive, and the the existing one created by this application
