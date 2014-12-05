@@ -7,6 +7,20 @@ define(function(require) {
     var $ = require('jquery');
     var dialog = require('base/js/dialog');
     var utils = require('base/js/utils');
+
+    /**
+     * OAuth scope for accessing specific files that have been opened/created
+     * by this app.
+     * @type {string}
+     */
+    var FILES_OAUTH_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+
+    /**
+     * OAuth scope for accessing file metadata (for tree view)
+     * @type {string}
+     */
+    var METADATA_OAUTH_SCOPE = 'https://www.googleapis.com/auth/drive.readonly.metadata';
+
     /**
      * Helper functions
      */
@@ -135,7 +149,7 @@ define(function(require) {
             return new Promise(function(resolve, reject) {
                 gapi.auth.authorize({
                     'client_id': '911569945122-tlvi6ucbj137ifhitpqpdikf3qo1mh9d.apps.googleusercontent.com',
-                    'scope': ['https://www.googleapis.com/auth/drive'],
+                    'scope': [FILES_OAUTH_SCOPE, METADATA_OAUTH_SCOPE],
                     'immediate': !opt_withPopup
                 }, function(result) {
                     resolve(wrap_result(result));
