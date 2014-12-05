@@ -41,6 +41,8 @@ project is in developpement.
 On first launch, the application will ask you for the authorization to access
 your files on Google Drive.  It only asks for permission to create new files or
  access files it has created or that you manually open with this application.
+It also requires permission to access file/directory metadata, in order
+to display the list of files/directories in the tree view.
 
 The request pop-up looks like the following:
 
@@ -53,5 +55,6 @@ at a later point.
 ![](img/popup.png)
 
 Once you click `Accept` you should be able to start creating new notebooks on
-Google Drive, and open existing ones created by this application.
+Google Drive, and open existing ones created by this application, and
+view files/directories in the tree view.
 
