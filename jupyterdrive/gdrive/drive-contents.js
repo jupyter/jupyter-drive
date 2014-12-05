@@ -98,7 +98,7 @@ define(function(require) {
             return drive_utils.upload_to_drive(JSON.stringify(data), metadata);
         })
         .then(function(response) {
-            return {path: path, name: response['title'] };
+            return {path: response['title']};
         })
 	.catch(function(err) {console.log(err)});
     };
