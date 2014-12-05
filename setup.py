@@ -69,24 +69,10 @@ setup(
 
     # have to be included in MANIFEST.in as well.
     package_data={
-        'jupyterdrive': ['jupyterdrive/ipython_notebook_config.json',
-                          'jupyterdrive/__init__.py',
-                          'jupyterdrive/gdrive/gapi_utils.js',
-                          'jupyterdrive/gdrive/drive_utils.js',
-                          'jupyterdrive/gdrive/drive-contents.js',
+        'jupyterdrive': [ '*.json',
+                          '*.py',
+                          'gdrive/*.js',
             ],
     },
-
-    # Although 'package_data' is the preferred approach, in some case you may
-    # need to place data files outside of your packages.
-    # see http://docs.python.org/3.4/distutils/setupscript.html#installing-additional-files
-    # In this case, 'data_file' will be installed into '<sys.prefix>/my_data'
-    data_files=[('jupyterdrive', 
-                         ['jupyterdrive/ipython_notebook_config.json',
-                          'jupyterdrive/__init__.py',
-                          'jupyterdrive/gdrive/gapi_utils.js',
-                          'jupyterdrive/gdrive/drive_utils.js',
-                          'jupyterdrive/gdrive/drive-contents.js',
-            ])],
 
 )
