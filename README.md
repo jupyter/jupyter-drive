@@ -1,31 +1,32 @@
 # Google Drive support for Jupyter Notebook
 
-This repository contains a custom Contents class that allows IPython to use
-Google Drive for file management.  The code is a python package that has the
-ability to install an Jupyter notebook JavaScript extension and
-activate/deactivate different IPython profiles to be used with Google drive.
+This repository contains a custom
+[Contents](https://github.com/ipython/ipython/blob/master/IPython/html/static/services/contents.js) class that allows IPython to use
+Google Drive for file management.  The code is a organized as a python package
+that contains functions to install a Jupyter notebook JavaScript extension,
+and activate/deactivate different IPython profiles to be used with Google drive.
 
-To install this package, close this repository locally and run
+To install this package, clone this repository locally and run
 
 ```
 pip install -e .
 ```
 
-This will install the package in development mode with pip, which mean that any
+This will install the package in development mode with pip, which means that any
 change you make to the repository will be reflected into the importable version
 immediately.
 
 To install the notebook extension and activate your default profile with Google
-drive run :
+Drive, run
 
 ```
 python -m jupyterdrive
 ```
 
-It is not yet possible to select another profile or deactivate the drive
-integration automatically, But you can get rid of
+It is not yet possible to select a profile other than the default profile,
+or to deactivate the drive integration automatically. But you can get rid of
 `~/.ipython/profile_defaut/ipython_notebook_config.json` config file to
-deactivate google drive as well as other config options.
+deactivate Google Drive as well as other config options.
 
 The configuration of IPython/Jupyter is done through the `.json` file in the
 profile situated in the profile and will take precedence on configuration done
@@ -37,20 +38,20 @@ project is in developpement.
 
 # First launch
 
-On first launch the application will ask you for the authorisation to access
-your google drive. it only ask for the permission to create new files or acess
-the files it has created.
+On first launch, the application will ask you for the authorization to access
+your files on Google Drive.  It only asks for permission to create new files or
+ access files it has created or that you manually open with this application.
 
-The request pop-up look like the following:
+The request pop-up looks like the following:
 
 ![](img/auth.png)
 
-Clicking ok will open a google auth pop-up, you will see that the application
-name appear to be `coLaboratory`. Keep that in mind if you want to revoke access
+Clicking ok will open a Google Oauth pop-up.  You will see that the application
+name appears as `coLaboratory`. Keep that in mind if you want to revoke access
 at a later point.
 
 ![](img/popup.png)
 
 Once you click `Accept` you should be able to start creating new notebooks on
-your google drive, and the the existing one created by this application
+Google Drive, and open existing ones created by this application.
 
