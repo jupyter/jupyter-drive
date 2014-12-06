@@ -57,7 +57,8 @@ define(function(require) {
          })
          .then(function(contents) {
              var model = JSON.parse(contents);
-             return {content: model, name: model.metadata.name, path:path};
+             // assume everything is writable for now
+             return {content: model, name: model.metadata.name, path:path, writable:true};
          });
     };
 
