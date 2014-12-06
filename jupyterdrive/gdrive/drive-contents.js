@@ -50,16 +50,22 @@ define(function(require) {
      * @param {Object} options
      */
     Contents.prototype.get = function (path, type, options) {
-        return gapi_utils.gapi_ready
-        .then($.proxy(drive_utils.get_resource_for_path, this, path, drive_utils.FileType.FILE))
-        .then(function(resource) {
+        var metadata_prm = gapi_utils.gapi_ready.then(
+            $.proxy(drive_utils.get_resource_for_path, this, path, drive_utils.FileType.FILE));
+        var contents_prm = metadata_prm.then(function(resource) {
             return gapi_utils.download(resource['downloadUrl']);
-         })
-         .then(function(contents) {
-             var model = JSON.parse(contents);
-             // assume everything is writable for now
-             return {content: model, name: model.metadata.name, path:path, writable:true};
-         });
+        });
+        return Promise.all([metadata_prm, contents_prm]).then(function(values) {
+            var metadata = values[0];
+            var contents = values[1];
+            var model = JSON.parse(contents);
+            return {
+                content: model,
+                name: model.metadata.name,
+                path:path,
+                writable: metadata['editable']
+            };
+        });
     };
 
     /**
