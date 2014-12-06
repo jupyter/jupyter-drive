@@ -16,7 +16,7 @@ setup(
     # https://packaging.python.org/en/latest/development.html#single-sourcing-the-version
     version='0.0.1a1',
 
-    description='Interation of IPython/Jupyter with google drive',
+    description='Integration of IPython/Jupyter with Google drive',
     long_description='',
 
     # The project's main homepage.
@@ -50,7 +50,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
-        'Programming Language :: Framework :: IPython',
+        'Framework :: IPython',
     ],
 
     # What does your project relate to?
