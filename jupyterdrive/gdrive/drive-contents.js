@@ -110,32 +110,11 @@ define(function(require) {
 	.catch(function(err) {console.log(err)});
     };
 
-    Contents.prototype.delete_notebook = function(name, path) {
-        var settings = {
-            processData : false,
-            cache : false,
-            type : "DELETE",
-            dataType : "json",
-            success : $.proxy(this.events.trigger, this.events,
-                'notebook_deleted.Contents',
-                {
-                    name: name,
-                    path: path
-                }),
-            error : utils.log_ajax_error
-        };
-        var url = utils.url_join_encode(
-            this.base_url,
-            'api/contents',
-            path,
-            name
-        );
-        $.ajax(url, settings);
-    };
-
-
     Contents.prototype.delete = function(path) {
-        return drive_utils.get_id_for_path(path, drive_utils.FileType.FILE)
+        return gapi_utils.gapi_ready
+        .then(function() {
+            return drive_utils.get_id_for_path(path, drive_utils.FileType.FILE);
+        })
         .then(function(file_id){
             return gapi_utils.execute(gapi.client.drive.files.delete({'fileId': file_id}));
         });
