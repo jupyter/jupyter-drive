@@ -105,7 +105,10 @@ define(function(require) {
     };
 
     Contents.prototype.delete = function(path) {
-        return drive_utils.get_id_for_path(path, drive_utils.FileType.FILE)
+        return gapi_utils.gapi_ready
+        .then(function() {
+            return drive_utils.get_id_for_path(path, drive_utils.FileType.FILE);
+        })
         .then(function(file_id){
             return gapi_utils.execute(gapi.client.drive.files.delete({'fileId': file_id}));
         });
