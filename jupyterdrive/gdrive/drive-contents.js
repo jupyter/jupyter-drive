@@ -262,6 +262,9 @@ define(function(require) {
         return gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FOLDER))
         .then(function(folder_id) {
+            // Note: this only retrieves the first 1000 items, althoug
+            // that should be good enough for now.
+            // TODO: retrieve more pages if necessary.
             var query = ('(fileExtension = \'ipynb\' or'
                 + ' mimeType = \'' + drive_utils.FOLDER_MIME_TYPE + '\')'
                 + ' and \'' + folder_id + '\' in parents'
@@ -287,6 +290,23 @@ define(function(require) {
                     created: files_resource['createdDate'],
                     last_modified: files_resource['modifiedDate']
                 };
+            });
+            // Sorts list so directories come before files, and within each
+            // category items are sorted alphabetically.
+            list.sort(function(a, b) {
+                if (a['type'] < b['type']) {
+                    return -1;
+                }
+                if (a['type'] > b['type']) {
+                    return 1;
+                }
+                if (a['name'] < b['name']) {
+                    return -1;
+                }
+                if (a['name'] > b['name']) {
+                    return 1;
+                }
+                return 0;
             });
             return {content: list};
         });
