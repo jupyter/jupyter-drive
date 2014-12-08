@@ -2,6 +2,6 @@
   "version" : 1,
   "NotebookApp":{
     "tornado_settings": {"contents_js_source": "nbextensions/gdrive/drive-contents"}, 
-    "contents_manager_class": "IPython.html.services.contents.clientsidenbmanager.ClientSideContentsManager"
+    "contents_manager_class": "jupyterdrive.clientsidenbmanager.ClientSideContentsManager"
   }
 }
