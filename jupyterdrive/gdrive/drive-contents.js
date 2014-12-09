@@ -10,6 +10,7 @@ define(function(require) {
     var dialog = require('base/js/dialog');
     var gapi_utils = require('./gapi_utils');
     var drive_utils = require('./drive_utils');
+    var notebook_model = require('./notebook_model');
 
 
     var Contents = function(options) {
@@ -58,7 +59,7 @@ define(function(require) {
         return Promise.all([metadata_prm, contents_prm]).then(function(values) {
             var metadata = values[0];
             var contents = values[1];
-            var model = JSON.parse(contents);
+            var model = notebook_model.notebook_from_file_contents(contents);
             return {
                 content: model,
                 name: model.metadata.name,
@@ -82,27 +83,15 @@ define(function(require) {
         return Promise.all([folder_id_prm, filename_prm]).then(function(values) {
 	    var folder_id = values[0];
 	    var filename = values[1];
-            var data = {
-                'cells' : [{
-                    'cell_type': 'code',
-                    'input': '',
-                    'outputs': [],
-                    'language': 'python',
-                    'metadata': {}
-                }],
-                'metadata': {
-                    'name': filename,
-                },
-                'nbformat': 3,
-                'nbformat_minor': 0
-            };
+	    var contents = notebook_model.file_contents_from_notebook(
+		notebook_model.new_notebook(filename));
             var metadata = {
                 'parents' : [{'id' : folder_id}],
                 'title' : filename,
                 'description': 'IP[y] file',
                 'mimeType': drive_utils.NOTEBOOK_MIMETYPE
             }
-            return drive_utils.upload_to_drive(JSON.stringify(data), metadata);
+            return drive_utils.upload_to_drive(contents, metadata);
         })
         .then(function(response) {
             return {path: response['title']};
@@ -150,9 +139,10 @@ define(function(require) {
 
     Contents.prototype.save = function(path, model, options) {
         var that = this;
-        var contents = JSON.stringify(model.content);
         return drive_utils.get_id_for_path(path, drive_utils.FileType.FILE)
         .then(function(file_id) {
+	    var contents =
+		notebook_model.file_contents_from_notebook(model.content);
             return drive_utils.upload_to_drive(contents, {}, file_id);
         })
         .then(function(resource) {
