@@ -2,6 +2,7 @@
 import IPython
 import IPython.html.nbextensions as nbe
 from IPython.utils.path import locate_profile
+from IPython.utils.py3compat import cast_unicode_py2
 
 
 import sys
@@ -41,8 +42,8 @@ def activate(profile):
     print(config)
     config['nbformat'] = 1
 
-    with io.open(os.path.join(pdir,'ipython_notebook_config.json'),'wb') as f:
-        json.dump(config,f, indent=2)
+    with io.open(os.path.join(pdir,'ipython_notebook_config.json'),'w', encoding='utf-8') as f:
+        f.write(cast_unicode_py2(json.dumps(config, indent=2)))
 
 def deactivate(profile):
     """should be a matter of just unsetting the above keys
