@@ -1,2 +1,2 @@
 import jupyterdrive
-jupyterdrive.install()
+jupyterdrive.main()

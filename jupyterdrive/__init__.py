@@ -52,8 +52,12 @@ def deactivate(profile):
     raise NotImplemented('deactivating a profile is not yet implemented.')
 
 
+def main(argv=None):
+    import argparse
+    prog = '{} -m jupyterdrive'.format(os.path.basename(sys.executable))
+    parser = argparse.ArgumentParser(prog=prog,
+                    description='Install Google Drive integration for Jupyter.')
+    parser.add_argument('profile', nargs='?', default='default')
+    args = parser.parse_args(argv)
+    install(profile=args.profile)
 
-
-if __name__ == '__main__':
-    """shoudl probably parse aruments of profiel and or activate deactivate"""
-    install()
