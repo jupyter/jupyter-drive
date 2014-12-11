@@ -120,32 +120,50 @@ define(function(require) {
         });
     };
 
-    Contents.prototype.rename_notebook = function(path, name, new_name) {
-        var that = this;
-        var data = {name: new_name};
-        var settings = {
-            processData : false,
-            cache : false,
-            type : "PATCH",
-            data : JSON.stringify(data),
-            dataType: "json",
-            headers : {'Content-Type': 'application/json'},
-            success :  function (json, status, xhr) {
-                that.events.trigger('notebook_rename_success.Contents',
-                    json);
-            },
-            error : function (xhr, status, error) {
-                that.events.trigger('notebook_rename_error.Contents',
-                    [xhr, status, error]);
+    Contents.prototype.rename = function(path, new_path) {
+        // Rename is only possible when path and new_path differ except in
+        // their last component, so check this first.
+        var path_components = drive_utils.split_path(path);
+        var new_path_components = drive_utils.split_path(new_path);
+
+        var base_path = [];
+        var name = '';
+        var new_name = '';
+        if (path_components.length != new_path_components.length) {
+            return Promise.reject(new Error('Rename cannot change path'));
+        }
+        for (var i = 0; i < path_components.length; ++i) {
+            var component = path_components[i];
+            var new_component = new_path_components[i];
+            if (i == path_components.length - 1) {
+                name = component;
+                new_name = new_component;
+            } else {
+                if (component != new_component) {
+                    return Promise.reject(new Error('Rename cannot change path'));
+                }
+                base_path.push(component);
             }
         }
-        var url = utils.url_join_encode(
-            this.base_url,
-            'api/contents',
-            path,
-            name
-        );
-        $.ajax(url, settings);
+
+        return gapi_utils.gapi_ready
+        .then(function() {
+            return drive_utils.get_id_for_path(path)
+        })
+        .then(function(file_id) {
+            var body = {'title': new_name};
+            var request = gapi.client.drive.files.patch({
+                'fileId': file_id,
+                'resource': body
+            });
+            return gapi_utils.execute(request);
+        })
+        .then(function() {
+            return {
+                'name': new_name,
+                'path': new_path
+            };
+        });
     };
 
     Contents.prototype.save = function(path, model, options) {

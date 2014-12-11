@@ -77,6 +77,15 @@ define(function(require) {
         });
     };
 
+
+    /**
+     * Split a path into path components
+     */
+    var split_path = function(path) {
+        return path.split('/').filter(function(c) { return c;});
+    };
+
+
     /**
      * Gets the Google Drive Files resource corresponding to a path.  The path
      * is always treated as an absolute path, no matter whether it contains
@@ -89,7 +98,7 @@ define(function(require) {
      *     or Error object on error.
      */
     var get_resource_for_path = function(path, type) {
-        var components = path.split('/').filter(function(c) { return c;});
+        var components = split_path(path);
         if (components.length == 0) {
             return Promise.reject(new Error('Cannot get root resource'));
         }
@@ -118,7 +127,7 @@ define(function(require) {
      *     or Error object on error.
      */
     var get_id_for_path = function(path, type) {
-        var components = path.split('/').filter(function(c) { return c;});
+        var components = split_path(path);
         if (components.length == 0) {
             return $.Deferred().resolve('root');
         }
@@ -234,6 +243,7 @@ define(function(require) {
         FOLDER_MIME_TYPE : FOLDER_MIME_TYPE,
         NOTEBOOK_MIMETYPE : NOTEBOOK_MIMETYPE,
         FileType : FileType,
+        split_path : split_path,
         get_id_for_path : get_id_for_path,
         get_resource_for_path : get_resource_for_path,
         get_new_filename : get_new_filename,
