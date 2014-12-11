@@ -27,12 +27,28 @@ define(function(require) {
         this.base_url = options.base_url;
 
         /**
-         * Used to store the revision id from the last save.  This is used
-         * in checkpointing, so that when create_checkpoint is called, it
-         * creates a checkpoint for that file.  It is a map from file ids
-         * to revision ids, and is updated on each successful save to a file.
+         * Stores the revision id from the last save or load.  This is used
+         * when checking if a file has been modified by another user.
          */
-        this.last_revision = {};
+        this.last_observed_revision = {};
+    };
+
+    /**
+     * Utility functions
+     */
+
+    /**
+     * This function should be called when a file is modified or opened.  It
+     * caches the revisionId of the head revision of that file.  This
+     * information is used for two purposes.  First, it is used to determine
+     * if another user has changed a file, in order to warn a user that they
+     * may be overwriting another user's work.  Second, it is used to
+     * checkpoint after saving.
+     *
+     * @param {resource} resource_prm a Google Drive file resource.
+     */
+    Contents.prototype.observe_file_resource = function(resource) {
+        this.last_observed_revision[resource['id']] = resource['headRevisionId'];
     };
 
     /**
@@ -51,9 +67,11 @@ define(function(require) {
      * @param {Object} options
      */
     Contents.prototype.get = function (path, type, options) {
+        var that = this;
         var metadata_prm = gapi_utils.gapi_ready.then(
             $.proxy(drive_utils.get_resource_for_path, this, path, drive_utils.FileType.FILE));
         var contents_prm = metadata_prm.then(function(resource) {
+            that.observe_file_resource(resource);
             return gapi_utils.download(resource['downloadUrl']);
         });
         return Promise.all([metadata_prm, contents_prm]).then(function(values) {
@@ -110,6 +128,7 @@ define(function(require) {
     };
 
     Contents.prototype.rename = function(path, new_path) {
+        var that = this;
         // Rename is only possible when path and new_path differ except in
         // their last component, so check this first.
         var path_components = drive_utils.split_path(path);
@@ -147,7 +166,8 @@ define(function(require) {
             });
             return gapi_utils.execute(request);
         })
-        .then(function() {
+        .then(function(resource) {
+            that.observe_file_resource(resource);
             return {
                 'name': new_name,
                 'path': new_path
@@ -157,14 +177,39 @@ define(function(require) {
 
     Contents.prototype.save = function(path, model, options) {
         var that = this;
-        return drive_utils.get_id_for_path(path, drive_utils.FileType.FILE)
-        .then(function(file_id) {
-	    var contents =
+        return drive_utils.get_resource_for_path(path, drive_utils.FileType.FILE)
+        .then(function(resource) {
+            var contents =
 		notebook_model.file_contents_from_notebook(model.content);
-            return drive_utils.upload_to_drive(contents, {}, file_id);
+            var save = function() {
+                return drive_utils.upload_to_drive(contents, {}, resource['id']);
+            };
+            if (resource['headRevisionId'] !=
+                that.last_observed_revision[resource['id']]) {
+                // The revision id of the files resource does not match the
+                // cached revision id for this file.  This implies that the
+                // file has been modified by another user/tab during this
+                // session.  Before saving, the user must be warned that they
+                // may be overwriting the work of another user.
+                return new Promise(function(resolve, reject) {
+                    var options = {
+                        title: 'File modified by other user',
+                        body: ('Another user has modified this file.  Click'
+                               + ' ok to overwrite this file with your'
+                               + ' content.'),
+                        buttons: {
+                            'ok': { click : function() { resolve(save()); },
+                                  },
+                            'cancel': { click : function() { reject(new Error('save cancelled')); } }
+                        }
+                    };
+                    dialog.modal(options);
+                });
+            }
+            return save();
         })
         .then(function(resource) {
-            that.last_revision[resource['id']] = resource['headRevisionId'];
+            that.observe_file_resource(resource);
             return {};
         });
     };
@@ -180,7 +225,7 @@ define(function(require) {
         return gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FILE))
         .then(function(file_id) {
-            var revision_id = that.last_revision[file_id];
+            var revision_id = that.last_observed_revision[file_id];
             if (!revision_id) {
                 return Promise.reject(new Error('File must be saved before checkpointing'));
             }
