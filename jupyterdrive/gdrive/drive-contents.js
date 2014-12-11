@@ -262,23 +262,46 @@ define(function(require) {
         return gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FOLDER))
         .then(function(folder_id) {
-            var query = ('(fileExtension = \'ipynb\' or'
-                + ' mimeType = \'' + drive_utils.FOLDER_MIME_TYPE + '\')'
-                + ' and \'' + folder_id + '\' in parents'
-                + ' and trashed = false');
-            var request = gapi.client.drive.files.list({
-                'maxResults' : 1000,
-                'q' : query
-            });
-            return gapi_utils.execute(request);
+            // Gets contents of the folder 1000 items at a time.  Google Drive
+            // returns at most 1000 items in each call to drive.files.list.
+            // Therefore we need to make multiple calls, using the following
+            // recursive method.
+
+            // Returns all items starting from the specified page token
+            // (or from the start if no page token is specified), and
+            // combines these with the items given.
+            var get_items = function(items, page_token) {
+                var query = ('(fileExtension = \'ipynb\' or'
+                             + ' mimeType = \'' + drive_utils.FOLDER_MIME_TYPE + '\')'
+                             + ' and \'' + folder_id + '\' in parents'
+                             + ' and trashed = false');
+                var params = {
+                    'maxResults' : 1000,
+                    'q' : query
+                };
+                if (page_token) {
+                    params['pageToken'] = page_token;
+                }
+                var request = gapi.client.drive.files.list(params)
+                return gapi_utils.execute(request)
+                .then(function(response) {
+                    var combined_items = items.concat(response['items']);
+                    var next_page_token = response['nextPageToken'];
+                    if (next_page_token) {
+                        return get_items(combined_items, next_page_token);
+                    }
+                    return combined_items;
+                });
+            };
+            return get_items([]);
         })
-        .then(function(response) {
+        .then(function(items) {
             // Convert this list to the format that is passed to
             // load_callback.  Note that a files resource can represent
             // a file or a directory.
             // TODO: check that date formats are the same, and either
             // convert to the IPython format, or document the difference.
-            var list = $.map(response['items'], function(files_resource) {
+            var list = $.map(items, function(files_resource) {
                 var type = files_resource['mimeType'] == drive_utils.FOLDER_MIME_TYPE ? 'directory' : 'notebook';
                 return {
                     type: type,
@@ -287,6 +310,23 @@ define(function(require) {
                     created: files_resource['createdDate'],
                     last_modified: files_resource['modifiedDate']
                 };
+            });
+            // Sorts list so directories come before files, and within each
+            // category items are sorted alphabetically.
+            list.sort(function(a, b) {
+                if (a['type'] < b['type']) {
+                    return -1;
+                }
+                if (a['type'] > b['type']) {
+                    return 1;
+                }
+                if (a['name'] < b['name']) {
+                    return -1;
+                }
+                if (a['name'] > b['name']) {
+                    return 1;
+                }
+                return 0;
             });
             return {content: list};
         });
