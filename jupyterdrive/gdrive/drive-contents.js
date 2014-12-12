@@ -175,7 +175,7 @@ define(function(require) {
 
     // NOTE: it would be better modify the API to combine create_checkpoint with
     // save
-    Contents.prototype.create_checkpoint = function(path, name, options) {
+    Contents.prototype.create_checkpoint = function(path, options) {
         var that = this;
         return gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FILE))
@@ -193,17 +193,17 @@ define(function(require) {
             return gapi_utils.execute(request);
         })
         .then(function(item) {
-            return JSON.stringify({
+            return {
                 last_modified: item['modifiedDate'],
                 id: item['id'],
                 drive_resource: item
-            });
+            };
         });
     };
 
-    Contents.prototype.restore_checkpoint = function(path, name, checkpoint_id, options) {
+    Contents.prototype.restore_checkpoint = function(path, checkpoint_id, options) {
         var file_id_prm = gapi_utils.gapi_ready
-        .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
+        .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FILE))
 
         var contents_prm = file_id_prm.then(function(file_id) {
             var request = gapi.client.drive.revisions.get({
@@ -216,31 +216,32 @@ define(function(require) {
             return gapi_utils.download(response['downloadUrl']);
         })
 
-        return $.when(file_id_prm, contents_prm)
-        .then(function(file_id, contents) {
-            console.log(contents);
+        return Promise.all([file_id_prm, contents_prm])
+        .then(function(values) {
+	    var file_id = values[0];
+	    var contents = values[1];
             return drive_utils.upload_to_drive(contents, {}, file_id);
         });
     };
 
-    Contents.prototype.list_checkpoints = function(path, name, options) {
+    Contents.prototype.list_checkpoints = function(path, options) {
         return gapi_utils.gapi_ready
-        .then($.proxy(drive_utils.get_id_for_path, this, path + '/' + name, drive_utils.FileType.FILE))
+        .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FILE))
         .then(function(file_id) {
-            var request = gapi.client.drive.revisions.list({ 'fileId': file_id });
+            var request = gapi.client.drive.revisions.list({'fileId': file_id });
             return gapi_utils.execute(request);
         })
         .then(function(response) {
             // TODO: filter out non-pinned revisions
-            return JSON.stringify(response['items']
+            return response['items']
             .filter(function(item) { return item['pinned']; })
             .map(function(item) {
-                return {
+		return {
                     last_modified: item['modifiedDate'],
                     id: item['id'],
                     drive_resource: item
                 };
-            }));
+            });
         });
     };
 
