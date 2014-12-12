@@ -60,9 +60,11 @@ define(function(require) {
             var metadata = values[0];
             var contents = values[1];
             var model = notebook_model.notebook_from_file_contents(contents);
+            var path_components = drive_utils.split_path(path);
+            var name = path_components[path_components.length - 1];
             return {
                 content: model,
-                name: model.metadata.name,
+                name: name,
                 path:path,
                 writable: metadata['editable']
             };
@@ -84,7 +86,7 @@ define(function(require) {
 	    var folder_id = values[0];
 	    var filename = values[1];
 	    var contents = notebook_model.file_contents_from_notebook(
-		notebook_model.new_notebook(filename));
+		notebook_model.new_notebook());
             var metadata = {
                 'parents' : [{'id' : folder_id}],
                 'title' : filename,
