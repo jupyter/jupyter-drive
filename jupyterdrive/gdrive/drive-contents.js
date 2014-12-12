@@ -218,8 +218,8 @@ define(function(require) {
 
         return Promise.all([file_id_prm, contents_prm])
         .then(function(values) {
-	    var file_id = values[0];
-	    var contents = values[1];
+            var file_id = values[0];
+            var contents = values[1];
             return drive_utils.upload_to_drive(contents, {}, file_id);
         });
     };
@@ -232,11 +232,10 @@ define(function(require) {
             return gapi_utils.execute(request);
         })
         .then(function(response) {
-            // TODO: filter out non-pinned revisions
             return response['items']
             .filter(function(item) { return item['pinned']; })
             .map(function(item) {
-		return {
+                return {
                     last_modified: item['modifiedDate'],
                     id: item['id'],
                     drive_resource: item
