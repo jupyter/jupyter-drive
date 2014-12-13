@@ -27,21 +27,21 @@ define(function(require) {
      *     that can be a multiline string according to IPEP 17.
      */
     var transform_notebook = function(notebook, transform_fn) {
-	if (!notebook['cells']) {
-	    return;
-	}
+        if (!notebook['cells']) {
+            return;
+        }
         notebook['cells'].forEach(function(cell) {
-	    if (cell['source']) {
-		cell['source'] = transform_fn(cell['source'])
-	    }
-            if (cell['outputs']) {
-                cell['outputs'].forEach(function(output) {
-                    if (output['data']) {
-                        output['data'] = transform_fn(output['data']);
-                    }
-                });
-            }
-	});        
+        if (cell['source']) {
+            cell['source'] = transform_fn(cell['source'])
+        }
+        if (cell['outputs']) {
+            cell['outputs'].forEach(function(output) {
+                if (output['data']) {
+                    output['data'] = transform_fn(output['data']);
+                }
+            });
+        }
+    });        
     };
 
     /**
@@ -58,7 +58,7 @@ define(function(require) {
                 return multiline_string;
             }
         };
-	transform_notebook(notebook, unsplit_lines);
+        transform_notebook(notebook, unsplit_lines);
         return notebook;
     };
 
@@ -69,8 +69,11 @@ define(function(require) {
      */
     var file_contents_from_notebook = function(notebook) {
         var notebook_copy = JSON.parse(JSON.stringify(notebook));
-        var split_lines = function(string) {
-            return string.split('\n').map(function(line, idx, array) {
+        var split_lines = function(obj) {
+            if(typeof(obj)!=='string'){
+                return object
+            }
+            return obj.split('\n').map(function(line, idx, array) {
                 if (idx == array.length - 1) {
                     return line;
                 } else {
@@ -78,7 +81,8 @@ define(function(require) {
                 }
             });
         };
-	transform_notebook(notebook, split_lines);
+
+        transform_notebook(notebook, split_lines);
         return JSON.stringify(notebook_copy);
     };
 
@@ -96,7 +100,7 @@ define(function(require) {
                 'language': 'python',
                 'metadata': {}
             }],
-	    'metadata': {},
+            'metadata': {},
             'nbformat': 4,
             'nbformat_minor': 0
         };
