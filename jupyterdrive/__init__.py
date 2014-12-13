@@ -39,7 +39,7 @@ def activate(profile):
 
     drive_config  = JSONFileConfigLoader('ipython_notebook_config.json', dname).load_config()
     config.merge(drive_config)
-    print('Activation of  Google drive integration for profile "%s"' % profile)
+    print('Activating Google Drive integration for profile "%s"' % profile)
     config['nbformat'] = 1
 
     with io.open(os.path.join(pdir,'ipython_notebook_config.json'),'w', encoding='utf-8') as f:
