@@ -87,7 +87,7 @@ define(function(require) {
      * @param {string} name Notebook name
      * @return {Object} JSON representation of a new notebook.
      */
-    var new_notebook = function(name) {
+    var new_notebook = function() {
         return {
             'cells' : [{
                 'cell_type': 'code',
@@ -96,9 +96,7 @@ define(function(require) {
                 'language': 'python',
                 'metadata': {}
             }],
-            'metadata': {
-                'name': name,
-            },
+	    'metadata': {},
             'nbformat': 4,
             'nbformat_minor': 0
         };
