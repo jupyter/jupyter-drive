@@ -16,17 +16,26 @@ This will install the package in development mode with pip, which means that any
 change you make to the repository will be reflected into the importable version
 immediately.
 
-To install the notebook extension and activate your default profile with Google
+To install the notebook extension and activate your profile with Google
 Drive, run
 
 ```
-python -m jupyterdrive
+python -m jupyterdrive <profilename>
 ```
 
-It is not yet possible to select a profile other than the default profile,
-or to deactivate the drive integration automatically. But you can get rid of
-`~/.ipython/profile_defaut/ipython_notebook_config.json` config file to
-deactivate Google Drive as well as other config options.
+If no profile name is given, Jupyter drive will install itself in the default profile.
+
+Be sure that the profile exist before running the command. You can create a new profile with 
+
+```
+ipython profile create <profilename>
+```
+
+Please refer to IPython documentation for more info on profiles.
+
+It is not yet possible to deactivate the drive integration automatically. But
+you can get rid of `~/.ipython/profile_defaut/ipython_notebook_config.json`
+config file to deactivate Google Drive as well as other config options.
 
 The configuration of IPython/Jupyter is done through the `.json` file in the
 profile situated in the profile and will take precedence on configuration done
