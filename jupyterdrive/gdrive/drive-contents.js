@@ -12,7 +12,6 @@ define(function(require) {
     var drive_utils = require('./drive_utils');
     var notebook_model = require('./notebook_model');
 
-
     var Contents = function(options) {
         // Constructor
         //
@@ -31,6 +30,7 @@ define(function(require) {
          * when checking if a file has been modified by another user.
          */
         this.last_observed_revision = {};
+        gapi_utils.gapi_ready.then(drive_utils.set_user_info);
     };
 
     /**

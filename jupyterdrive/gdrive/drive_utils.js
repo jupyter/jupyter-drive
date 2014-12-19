@@ -6,6 +6,7 @@ define(function(require) {
 
     var IPython =    require('base/js/namespace');
     var jquery =     require('jquery');
+    var $ = jquery;
     var gapi_utils = require('./gapi_utils');
 
     var FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
@@ -238,6 +239,27 @@ define(function(require) {
         return gapi_utils.execute(request);
     };
 
+    /**
+     * Fetch user avatar url and put it in the header
+     * optionally take a selector into which to insert the img tag
+     *
+     *
+     *
+     **/
+    var set_user_info = function(selector){
+        selector = selector || '#header-container';
+        var request = gapi.client.drive.about.get()
+        return gapi_utils.execute(request).then(function(result){
+            var user = result.user;
+            var image = $('<img/>').attr('src', result.user.picture.url)
+                                   .addClass('pull-right')
+                                   .css('border-radius','32px')
+                                   .css('width','32px')
+            image.attr('title', 'Logged in to Google Drive as '+user.displayName)
+            $('#header-container').append(image)
+        })
+    }
+
 
     var drive_utils = {
         FOLDER_MIME_TYPE : FOLDER_MIME_TYPE,
@@ -247,7 +269,8 @@ define(function(require) {
         get_id_for_path : get_id_for_path,
         get_resource_for_path : get_resource_for_path,
         get_new_filename : get_new_filename,
-        upload_to_drive : upload_to_drive
+        upload_to_drive : upload_to_drive, 
+        set_user_info: set_user_info
     }
 
     return drive_utils;
