@@ -148,7 +148,7 @@ define(function(require) {
         var authorize_internal = function() {
             return new Promise(function(resolve, reject) {
                 gapi.auth.authorize({
-                    'client_id': '911569945122-tlvi6ucbj137ifhitpqpdikf3qo1mh9d.apps.googleusercontent.com',
+                    'client_id': '763546234320-uvcktfp0udklafjqv00qjgivpjh0t33p.apps.googleusercontent.com',
                     'scope': [FILES_OAUTH_SCOPE, METADATA_OAUTH_SCOPE],
                     'immediate': !opt_withPopup
                 }, function(result) {
