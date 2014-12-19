@@ -366,23 +366,6 @@ define(function(require) {
                     last_modified: files_resource['modifiedDate']
                 };
             });
-            // Sorts list so directories come before files, and within each
-            // category items are sorted alphabetically.
-            list.sort(function(a, b) {
-                if (a['type'] < b['type']) {
-                    return -1;
-                }
-                if (a['type'] > b['type']) {
-                    return 1;
-                }
-                if (a['name'] < b['name']) {
-                    return -1;
-                }
-                if (a['name'] > b['name']) {
-                    return 1;
-                }
-                return 0;
-            });
             return {content: list};
         });
     };
