@@ -4,6 +4,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 from IPython.html.services.contents.manager import ContentsManager
+from IPython.html.services.contents.filemanager import FileContentsManager
 
 class ClientSideContentsManager(ContentsManager):
     """Dummy contents manager for use with client-side contents APIs like GDrive
