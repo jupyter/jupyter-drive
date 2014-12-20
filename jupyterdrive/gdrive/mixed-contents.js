@@ -43,7 +43,7 @@ define(function(require) {
      * @return {boolean} True if the path is a Google Drive path.
      *
      */
-    Contents.prototype.is_drive_path = function(path) {
+    var is_drive_path = function(path) {
         var components = path.split('/');
         return components.length > 0 && components[0] === DRIVE_PATH_SENTINEL;
     }
@@ -54,9 +54,20 @@ define(function(require) {
      * @return {string} the converted path (gdrive/my/directory => my_directory)
      *
      */
-    Contents.prototype.notebook_path_to_drive_path = function(path) {
+    var notebook_path_to_drive_path = function(path) {
         var components = path.split('/');
         return components.slice(1).join('/');
+    }
+
+    /**
+     * Convert a path from Google Drive to notebook format
+     * @param {string} path The path to convert.
+     * @return {string} the converted path (gdrive/my/directory => my_directory)
+     *
+     */
+    var drive_path_to_notebook_path = function(path) {
+        var components = path.split('/');
+        return [DRIVE_PATH_SENTINEL].concat(components).join('/');
     }
 
     /**
@@ -64,10 +75,9 @@ define(function(require) {
      * @param {string} method_name Name of the method being called
      */
     Contents.prototype.route_function = function(method_name, args) {
-        if (this.is_drive_path(args[0])) {
-            var new_args = Array.prototype.slice(args);
-            new_args[0] = this.notebook_path_to_drive_path(args[0]);
-            return this.drive_contents[method_name].apply(this.drive_contents, new_args);
+        if (is_drive_path(args[0])) {
+            args[0] = notebook_path_to_drive_path(args[0]);
+            return this.drive_contents[method_name].apply(this.drive_contents, args);
         } else {
             return this.local_contents[method_name].apply(this.local_contents, args);
         }
@@ -82,7 +92,10 @@ define(function(require) {
     };
 
     Contents.prototype.new_untitled = function(path, options) {
-        return this.route_function('new_untitled', arguments);
+        return this.route_function('new_untitled', arguments).then(function(model) {
+            model['path'] = drive_path_to_notebook_path(model['path']);
+            return model;
+        });
     };
 
     Contents.prototype.delete = function(path) {
