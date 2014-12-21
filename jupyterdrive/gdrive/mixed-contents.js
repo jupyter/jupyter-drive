@@ -34,6 +34,18 @@ define(function(require) {
     var DRIVE_PATH_SENTINEL = 'gdrive';
 
     /**
+     * Generates the object that represents the Google Drive filesystem
+     * @return {Object} An object representing the Google Drive directory
+     */
+    var drive_path_mountpoint = function() {
+        return {
+            type: 'directory',
+            name: DRIVE_PATH_SENTINEL,
+            path: DRIVE_PATH_SENTINEL,
+        };
+    };
+
+    /**
      * Routing functions
      */
 
@@ -71,13 +83,36 @@ define(function(require) {
     }
 
     /**
+     * Takes a files resource (an object with a 'path' key) and converts it
+     * from Google Drive format
+     * @param {Object} obj The files object (this is modified by the function).
+     */
+    var convert_response = function(obj) {
+        console.log(obj);
+        obj['path'] = drive_path_to_notebook_path(obj['path']);
+        return obj;
+    };
+
+    /**
      * Route a function to the appropriate content manager class
      * @param {string} method_name Name of the method being called
+     * @param {Array} path_args the indices of the arguments which are paths
+     * @param {Array} args the arguments to apply
+     * @param {Function} drive_continuation Function to apply to arguments when Google Drive is selected.
      */
-    Contents.prototype.route_function = function(method_name, args) {
-        if (is_drive_path(args[0])) {
-            args[0] = notebook_path_to_drive_path(args[0]);
-            return this.drive_contents[method_name].apply(this.drive_contents, args);
+    Contents.prototype.route_function = function(method_name, path_args, args, drive_continuation) {
+        if (path_args.length == 0) {
+            // Unexpected error: if path_args is empty then there is no way to
+            // route this function, since there is no way to tell which
+            // Contents instance to use.
+            throw 'path_args was empty, so route_function cannot determine which Contents instance to use';
+        }
+        if (is_drive_path(args[path_args[0]])) {
+            for (var i = 0; i < path_args.length; i++) {
+                var idx = path_args[i];
+                args[idx] = notebook_path_to_drive_path(args[idx]);    
+            }
+            return this.drive_contents[method_name].apply(this.drive_contents, args).then(drive_continuation);
         } else {
             return this.local_contents[method_name].apply(this.local_contents, args);
         }
@@ -88,34 +123,40 @@ define(function(require) {
      */
 
     Contents.prototype.get = function (path, type, options) {
-        return this.route_function('get', arguments);
+        return this.route_function('get', [0], arguments, convert_response);
     };
 
     Contents.prototype.new_untitled = function(path, options) {
-        return this.route_function('new_untitled', arguments).then(function(model) {
-            model['path'] = drive_path_to_notebook_path(model['path']);
-            return model;
-        });
+        return this.route_function('new_untitled', [0], arguments, convert_response);
     };
 
     Contents.prototype.delete = function(path) {
-        return this.route_function('delete', arguments);
+        return this.route_function('delete', [0], arguments, function(x) {return x;});
     };
 
     Contents.prototype.rename = function(path, new_path) {
-        return this.route_function('rename', arguments);
+        return this.route_function('rename', [0, 1], arguments, convert_response);
     };
 
     Contents.prototype.save = function(path, model, options) {
-        return this.route_function('save', arguments);
+        return this.route_function('save', [0], arguments, convert_response);
     };
 
     Contents.prototype.list_contents = function(path, options) {
-        return this.route_function('list_contents', arguments);
+        return this.route_function('list_contents', [0], arguments, function(response) {
+            response['content'].forEach(convert_response);
+            return response;
+        }).then(function(response) {
+            if (path === '') {
+                // If this is the root path, add the drive mountpoint directory.
+                response['content'].push(drive_path_mountpoint());
+            }
+            return response;
+        });
     };
 
     Contents.prototype.copy = function(from_file, to_dir) {
-        return this.route_function('copy', arguments);
+        return this.route_function('copy', [0, 1], arguments);
     };
 
     /**
@@ -123,15 +164,15 @@ define(function(require) {
      */
 
     Contents.prototype.create_checkpoint = function(path, options) {
-        return this.route_function('create_checkpoint', arguments);
+        return this.route_function('create_checkpoint', [0], arguments);
     };
 
     Contents.prototype.restore_checkpoint = function(path, checkpoint_id, options) {
-        return this.route_function('restore_checkpoint', arguments);
+        return this.route_function('restore_checkpoint', [0], arguments);
     };
 
     Contents.prototype.list_checkpoints = function(path, options) {
-        return this.route_function('list_checkpoints', arguments);
+        return this.route_function('list_checkpoints', [0], arguments);
     };
 
     IPython.Contents = Contents;
