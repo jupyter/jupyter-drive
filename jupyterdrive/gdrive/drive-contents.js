@@ -52,6 +52,42 @@ define(function(require) {
     };
 
     /**
+     * Converts a Google Drive files resource, (see
+     * https://developers.google.com/drive/v2/reference/files)
+     * to an IPEP 27 contents model (see
+     * https://github.com/ipython/ipython/wiki/IPEP-27:-Contents-Service)
+     * Note that files resources can represent files or directories.
+     *
+     * TODO: check that date formats are the same, and either
+     * convert to the IPython format, or document the difference.
+     *
+     * @param {string} path Path of resoure (including file name)
+     * @param {Object} resource Google Drive files resource
+     * @return {Object} IPEP 27 compliant contents model
+     */
+    var files_resource_to_contents_model = function(path, resource) {
+        var title = resource['title'];
+        var mimetype = resource['mimeType']
+
+        // Determine resource type.
+        var nbextension = '.ipynb';
+        var type = 'file';
+        if (mimetype === drive_utils.FOLDER_MIME_TYPE) {
+            type = 'directory';
+        } else if (mimetype === drive_utils.NOTEBOOK_MIMETYPE ||
+            title.indexOf(nbextension, title.length - nbextension.length) !== -1) {
+            type = 'notebook';
+        }
+        return {
+            type: type,
+            name: title,
+            path: path,
+            created: resource['createdDate'],
+            last_modified: resource['modifiedDate']
+        };
+    };
+
+    /**
      * Notebook Functions
      */
 
@@ -77,15 +113,10 @@ define(function(require) {
         return Promise.all([metadata_prm, contents_prm]).then(function(values) {
             var metadata = values[0];
             var contents = values[1];
-            var model = notebook_model.notebook_from_file_contents(contents);
-            var path_components = drive_utils.split_path(path);
-            var name = path_components[path_components.length - 1];
-            return {
-                content: model,
-                name: name,
-                path:path,
-                writable: metadata['editable']
-            };
+            var model = files_resource_to_contents_model(path, metadata);
+            model['content'] = notebook_model.notebook_from_file_contents(contents);
+            model['writable'] = metadata['editable'];
+            return model;
         });
     };
 
@@ -101,10 +132,10 @@ define(function(require) {
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.Folder))
         var filename_prm = folder_id_prm.then(drive_utils.get_new_filename);
         return Promise.all([folder_id_prm, filename_prm]).then(function(values) {
-	    var folder_id = values[0];
-	    var filename = values[1];
-	    var contents = notebook_model.file_contents_from_notebook(
-		notebook_model.new_notebook());
+            var folder_id = values[0];
+            var filename = values[1];
+            var contents = notebook_model.file_contents_from_notebook(
+                notebook_model.new_notebook());
             var metadata = {
                 'parents' : [{'id' : folder_id}],
                 'title' : filename,
@@ -113,10 +144,10 @@ define(function(require) {
             }
             return drive_utils.upload_to_drive(contents, metadata);
         })
-        .then(function(response) {
-            return {path: response['title']};
-        })
-	.catch(function(err) {console.log(err)});
+        .then(function(resource) {
+            var fullpath = path + '/' + resource['title'];
+            return files_resource_to_contents_model(fullpath, resource);
+        });
     };
 
     Contents.prototype.delete = function(path) {
@@ -170,10 +201,7 @@ define(function(require) {
         })
         .then(function(resource) {
             that.observe_file_resource(resource);
-            return {
-                'name': new_name,
-                'path': new_path
-            };
+            return files_resource_to_contents_model(path, resource);
         });
     };
 
@@ -182,7 +210,7 @@ define(function(require) {
         return drive_utils.get_resource_for_path(path, drive_utils.FileType.FILE)
         .then(function(resource) {
             var contents =
-		notebook_model.file_contents_from_notebook(model.content);
+        notebook_model.file_contents_from_notebook(model.content);
             var save = function() {
                 return drive_utils.upload_to_drive(contents, {}, resource['id']);
             };
@@ -212,7 +240,7 @@ define(function(require) {
         })
         .then(function(resource) {
             that.observe_file_resource(resource);
-            return {};
+            return files_resource_to_contents_model(path, resource);
         });
     };
 
@@ -351,20 +379,9 @@ define(function(require) {
             return get_items([]);
         })
         .then(function(items) {
-            // Convert this list to the format that is passed to
-            // load_callback.  Note that a files resource can represent
-            // a file or a directory.
-            // TODO: check that date formats are the same, and either
-            // convert to the IPython format, or document the difference.
-            var list = $.map(items, function(files_resource) {
-                var type = files_resource['mimeType'] == drive_utils.FOLDER_MIME_TYPE ? 'directory' : 'notebook';
-                return {
-                    type: type,
-                    name: files_resource['title'],
-                    path: path + '/' + files_resource['title'],
-                    created: files_resource['createdDate'],
-                    last_modified: files_resource['modifiedDate']
-                };
+            var list = $.map(items, function(resource) {
+                var fullpath = path + '/' + resource['title'];
+                return files_resource_to_contents_model(fullpath, resource)
             });
             return {content: list};
         });
