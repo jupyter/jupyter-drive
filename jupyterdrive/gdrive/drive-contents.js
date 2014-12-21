@@ -354,9 +354,7 @@ define(function(require) {
             // (or from the start if no page token is specified), and
             // combines these with the items given.
             var get_items = function(items, page_token) {
-                var query = ('(fileExtension = \'ipynb\' or'
-                             + ' mimeType = \'' + drive_utils.FOLDER_MIME_TYPE + '\')'
-                             + ' and \'' + folder_id + '\' in parents'
+                var query = ('\'' + folder_id + '\' in parents'
                              + ' and trashed = false');
                 var params = {
                     'maxResults' : 1000,
