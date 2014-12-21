@@ -114,7 +114,10 @@ define(function(require) {
             return drive_utils.upload_to_drive(contents, metadata);
         })
         .then(function(response) {
-            return {path: response['title']};
+            return {
+                path: path + '/' + response['title'],
+                name: response['title']
+            };
         })
 	.catch(function(err) {console.log(err)});
     };
