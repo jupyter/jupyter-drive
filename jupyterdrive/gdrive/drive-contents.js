@@ -4,7 +4,6 @@
 define(function(require) {
     "use strict";
 
-    var IPython = require('base/js/namespace');
     var $ = require('jquery');
     var utils = require('base/js/utils');
     var dialog = require('base/js/dialog');
@@ -386,7 +385,6 @@ define(function(require) {
     };
 
 
-    IPython.Contents = Contents;
 
     return {'Contents': Contents};
 });
