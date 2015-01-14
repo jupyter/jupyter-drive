@@ -57,9 +57,9 @@ The request pop-up looks like the following:
 
 ![](img/auth.png)
 
-Clicking ok will open a Google Oauth pop-up.  You will see that the application
-name appears as `coLaboratory`. Keep that in mind if you want to revoke access
-at a later point.
+Clicking ok will open a Google Oauth pop-up.  You will see that the `Jupyter
+Drive` application want access to some informations about your files. Keep that
+in mind if you want to revoke access at a later point.
 
 ![](img/popup.png)
 
