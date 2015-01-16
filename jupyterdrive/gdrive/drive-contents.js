@@ -113,7 +113,11 @@ define(function(require) {
             var metadata = values[0];
             var contents = values[1];
             var model = files_resource_to_contents_model(path, metadata);
-            model['content'] = notebook_model.notebook_from_file_contents(contents);
+            if(metadata.mimetyme == drive_utils.NOTEBOOK_MIMETYPE){
+                model['content'] = notebook_model.notebook_from_file_contents(contents);
+            } else {
+                model['content'] = JSON.parse(contents);
+            }
             model['writable'] = metadata['editable'];
             return model;
         });
@@ -126,20 +130,45 @@ define(function(require) {
      * @param {String} path The directory in which to create the new file
      * @param {Object} options Includes 'extension' - the extension to use if name not specified.
      */
+    /**
+     * Creates a new untitled file or directory in the specified directory path.
+     *
+     * @method new
+     * @param {String} path: the directory in which to create the new file/directory
+     * @param {Object} options:
+     *      ext: file extension to use
+     *      type: model type to create ('notebook', 'file', or 'directory')
+     */
     Contents.prototype.new_untitled = function(path, options) {
         var folder_id_prm = gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.Folder))
-        var filename_prm = folder_id_prm.then(drive_utils.get_new_filename);
+        var filename_prm = folder_id_prm.then(
+                function(data){ return drive_utils.get_new_filename(data, options.ext)}
+        );
         return Promise.all([folder_id_prm, filename_prm]).then(function(values) {
             var folder_id = values[0];
             var filename = values[1];
-            var contents = notebook_model.file_contents_from_notebook(
-                notebook_model.new_notebook());
+            var contents;
+            var mime;
+            var description;
+            if(options.type === 'notebook'){
+                contents = notebook_model.file_contents_from_notebook(
+                    notebook_model.new_notebook()
+                );
+                mime = drive_utils.NOTEBOOK_MIMETYPE;
+                description = 'Jupyter Notebook';
+            } else if (options.type === 'file'){
+                contents = ''; 
+                mime = 'text/plain';
+                description = 'text file';
+            } else {
+                reject(new Error("I do not know how to create "+options.type+" (yet)"));
+            }
             var metadata = {
                 'parents' : [{'id' : folder_id}],
                 'title' : filename,
-                'description': 'IP[y] file',
-                'mimeType': drive_utils.NOTEBOOK_MIMETYPE
+                'description': description,
+                'mimeType':mime
             }
             return drive_utils.upload_to_drive(contents, metadata);
         })

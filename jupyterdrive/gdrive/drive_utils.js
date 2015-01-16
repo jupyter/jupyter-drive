@@ -149,9 +149,10 @@ define(function(require) {
      * @return A promise fullfilled with the new filename.  In case of errors,
      *     'Untitled.ipynb' is used as a fallback.
      */
-    var get_new_filename = function(opt_folderId) {
+    var get_new_filename = function(opt_folderId, ext) {
         /** @type {string} */
         var folderId = opt_folderId || 'root';
+        var ext = ext || '.'+NOTEBOOK_EXTENSION;
         var query = 'title contains \'' + NEW_NOTEBOOK_TITLE + '\'' +
             ' and \'' + folderId + '\' in parents' +
             ' and trashed = false';
@@ -161,7 +162,7 @@ define(function(require) {
             'q': query
         });
 
-        var fallbackFilename = NEW_NOTEBOOK_TITLE + '.' + NOTEBOOK_EXTENSION;
+        var fallbackFilename = NEW_NOTEBOOK_TITLE + ext;
         return gapi_utils.execute(request)
         .then(function(response) {
             // Use 'Untitled.ipynb' as a fallback in case of error
@@ -177,7 +178,7 @@ define(function(require) {
             // names tried, and existingFilenames contains N elements.
             for (var i = 0; i <= existingFilenames.length; i++) {
                 /** @type {string} */
-                var filename = NEW_NOTEBOOK_TITLE + i + '.' + NOTEBOOK_EXTENSION;
+                var filename = NEW_NOTEBOOK_TITLE + i + ext;
                 if (existingFilenames.indexOf(filename) == -1) {
                     return filename;
                 }
