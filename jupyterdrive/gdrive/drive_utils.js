@@ -255,8 +255,10 @@ define(function(require) {
                                    .addClass('pull-right')
                                    .css('border-radius','32px')
                                    .css('width','32px')
-            image.attr('title', 'Logged in to Google Drive as '+user.displayName)
-            $('#header-container').append(image)
+                                   .css('margin-top','-1px')
+                                   .css('margin-bottom','-1px');
+            image.attr('title', 'Logged in to Google Drive as '+user.displayName);
+            $('#header-container').prepend($('<span/>').append(image));
         })
     }
 
