@@ -107,7 +107,21 @@ define(function(require) {
             $.proxy(drive_utils.get_resource_for_path, this, path, drive_utils.FileType.FILE));
         var contents_prm = metadata_prm.then(function(resource) {
             that.observe_file_resource(resource);
-            return gapi_utils.download(resource['downloadUrl']);
+            return gapi_utils
+                .download(resource['downloadUrl'])
+                .catch(function(data){
+                    var reason ='Unknown Error.';
+                    if( data.xhr.status === 404){
+                        reason = 'We cannot access requested resource. \n'+
+                                 'This can happen if the resource was not created with jupyter drive.\n'+
+                                 'Please re-upload the resource by dragging a copy of the file onto the Jupyter file manager';
+                    } else if (data.xhr.status === 401){
+                        reason = "You don't have permission to access this resource";
+                    }
+                    var error = new Error(reason);
+                    error.name = 'DriveDownloadError';
+                    return Promise.reject(error);
+                });
         });
         return Promise.all([metadata_prm, contents_prm]).then(function(values) {
             var metadata = values[0];
