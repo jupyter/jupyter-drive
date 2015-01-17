@@ -112,7 +112,7 @@ define(function(require) {
                 .catch(function(data){
                     var reason ='Unknown Error.';
                     if( data.xhr.status === 404){
-                        reason = 'We cannot access requested resource\n'+
+                        reason = 'We cannot access requested resource. \n'+
                                  'This can happen if the resource was not created with jupyter drive.\n'+
                                  'Please re-upload the resource by dragging a copy of the file onto the Jupyter file manager';
                     } else if (data.xhr.status === 401){
