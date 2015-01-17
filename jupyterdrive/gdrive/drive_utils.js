@@ -149,11 +149,16 @@ define(function(require) {
      * @return A promise fullfilled with the new filename.  In case of errors,
      *     'Untitled.ipynb' is used as a fallback.
      */
-    var get_new_filename = function(opt_folderId, ext) {
+    var get_new_filename = function(opt_folderId, ext, default_name) {
         /** @type {string} */
         var folderId = opt_folderId || 'root';
-        var ext = ext || '.'+NOTEBOOK_EXTENSION;
-        var query = 'title contains \'' + NEW_NOTEBOOK_TITLE + '\'' +
+        if ( typeof ext === 'undefined'){
+            ext = '.'+NOTEBOOK_EXTENSION;
+        }
+
+        default_name = default_name || NEW_NOTEBOOK_TITLE
+
+        var query = 'title contains \'' + default_name + '\'' +
             ' and \'' + folderId + '\' in parents' +
             ' and trashed = false';
         var request = gapi.client.drive.files.list({
@@ -162,7 +167,7 @@ define(function(require) {
             'q': query
         });
 
-        var fallbackFilename = NEW_NOTEBOOK_TITLE + ext;
+        var fallbackFilename = default_name + ext;
         return gapi_utils.execute(request)
         .then(function(response) {
             // Use 'Untitled.ipynb' as a fallback in case of error
@@ -178,7 +183,7 @@ define(function(require) {
             // names tried, and existingFilenames contains N elements.
             for (var i = 0; i <= existingFilenames.length; i++) {
                 /** @type {string} */
-                var filename = NEW_NOTEBOOK_TITLE + i + ext;
+                var filename = default_name + i + ext;
                 if (existingFilenames.indexOf(filename) == -1) {
                     return filename;
                 }

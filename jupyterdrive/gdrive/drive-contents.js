@@ -127,6 +127,30 @@ define(function(require) {
         });
     };
 
+    Contents.prototype._new_untitled_dir = function(path, options){
+
+        var folder_id_prm = gapi_utils.gapi_ready
+        .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.Folder))
+        var filename_prm = folder_id_prm.then(
+                function(data){ return drive_utils.get_new_filename(data, '', 'Untilted_Folder');}
+        );
+
+        return Promise.all([folder_id_prm, filename_prm]).then(function(values) {
+            var folder_id = values[0];
+            var filename = values[1];
+            var mime = drive_utils.FOLDER_MIME_TYPE;
+
+            var metadata = {
+                'parents' : [{'id' : folder_id}],
+                'title' : filename,
+                'mimeType':mime
+            }
+            return gapi_utils.execute(gapi.client.drive.files.insert({'resource': metadata}));
+        })
+
+
+    }
+
     /**
      * Creates a new file at the specified directory path.
      *
@@ -144,6 +168,10 @@ define(function(require) {
      *      type: model type to create ('notebook', 'file', or 'directory')
      */
     Contents.prototype.new_untitled = function(path, options) {
+        if(options.type == 'directory'){
+            return this._new_untitled_dir(path, options);
+
+        }
         var folder_id_prm = gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.Folder))
         var filename_prm = folder_id_prm.then(
@@ -163,7 +191,7 @@ define(function(require) {
                 contents = ''; 
                 mime = 'text/plain';
             } else {
-                reject(new Error("I do not know how to create "+options.type+" (yet)"));
+                Promise.reject(new Error("I do not know how to create "+options.type+" (yet)"));
             }
             var metadata = {
                 'parents' : [{'id' : folder_id}],
