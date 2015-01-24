@@ -9,6 +9,18 @@ define(function(require) {
     var utils = require('base/js/utils');
 
     /**
+     * Google API Client ID
+     * @type {string}
+     */
+    var CLIENT_ID = '763546234320-uvcktfp0udklafjqv00qjgivpjh0t33p.apps.googleusercontent.com';
+
+    /**
+     * Google API App ID
+     * @type {string}
+     */
+    var APP_ID = '763546234320';
+
+    /**
      * OAuth scope for accessing specific files that have been opened/created
      * by this app.
      * @type {string}
@@ -143,7 +155,7 @@ define(function(require) {
      */
     var load_gapi_2 = function(d) {
         return new Promise(function(resolve, reject) {
-            gapi.load('auth:client,drive-realtime,drive-share', function() {
+            gapi.load('auth:client,drive-realtime,drive-share,picker', function() {
                 gapi.client.load('drive', 'v2', resolve);
             });
         });
@@ -158,7 +170,7 @@ define(function(require) {
         var authorize_internal = function() {
             return new Promise(function(resolve, reject) {
                 gapi.auth.authorize({
-                    'client_id': '763546234320-uvcktfp0udklafjqv00qjgivpjh0t33p.apps.googleusercontent.com',
+                    'client_id': CLIENT_ID,
                     'scope': [FILES_OAUTH_SCOPE, METADATA_OAUTH_SCOPE],
                     'immediate': !opt_withPopup
                 }, function(result) {
@@ -207,6 +219,7 @@ define(function(require) {
     var gapi_ready = load_gapi_1().then(load_gapi_2).then(authorize);
 
     var drive_utils = {
+        APP_ID : APP_ID,
         download : download,
         execute : execute,
         gapi_ready : gapi_ready

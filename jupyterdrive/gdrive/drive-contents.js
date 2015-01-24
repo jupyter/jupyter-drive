@@ -10,6 +10,7 @@ define(function(require) {
     var gapi_utils = require('./gapi_utils');
     var drive_utils = require('./drive_utils');
     var notebook_model = require('./notebook_model');
+    var picker_utils = require('./picker_utils');
 
     var Contents = function(options) {
         // Constructor
@@ -107,22 +108,16 @@ define(function(require) {
             $.proxy(drive_utils.get_resource_for_path, this, path, drive_utils.FileType.FILE));
         var contents_prm = metadata_prm.then(function(resource) {
             that.observe_file_resource(resource);
-            return gapi_utils
-                .download(resource['downloadUrl'])
-                .catch(function(data){
-                    var reason ='Unknown Error.';
-                    if( data.xhr.status === 404){
-                        reason = 'We cannot access requested resource. \n'+
-                                 'This can happen if the resource was not created with jupyter drive.\n'+
-                                 'Please re-upload the resource by dragging a copy of the file onto the Jupyter file manager';
-                    } else if (data.xhr.status === 401){
-                        reason = "You don't have permission to access this resource";
-                    }
-                    var error = new Error(reason);
-                    error.name = 'DriveDownloadError';
-                    return Promise.reject(error);
-                });
-        });
+            return gapi_utils.download(resource['downloadUrl'])
+            .catch(function(error){
+                if (error.xhr.status != 404) {
+                    return error;  // Should this be Promise.reject(error)???
+                }
+                return picker_utils.pick_file(resource.parents[0]['id'], resource['title'])
+                .then(function() { return gapi_utils.download(resource['downloadUrl']); });
+            });
+        })
+
         return Promise.all([metadata_prm, contents_prm]).then(function(values) {
             var metadata = values[0];
             var contents = values[1];
