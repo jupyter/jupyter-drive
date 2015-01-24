@@ -64,25 +64,35 @@ define(function(require) {
      * @param {Object} resource Google Drive files resource
      * @return {Object} IPEP 27 compliant contents model
      */
-    var files_resource_to_contents_model = function(path, resource) {
+    var files_resource_to_contents_model = function(path, resource, content) {
         var title = resource['title'];
         var mimetype = resource['mimeType']
 
         // Determine resource type.
         var nbextension = '.ipynb';
         var type = 'file';
+        var model_content;
         if (mimetype === drive_utils.FOLDER_MIME_TYPE) {
             type = 'directory';
         } else if (mimetype === drive_utils.NOTEBOOK_MIMETYPE ||
             title.indexOf(nbextension, title.length - nbextension.length) !== -1) {
             type = 'notebook';
+            if( typeof content !== 'undefined'){
+                model_content = notebook_model.notebook_from_file_contents(content)
+            }
+        } else {
+            if( typeof content !== 'undefined'){
+                model_content = content;
+            }
         }
         return {
             type: type,
             name: title,
             path: path,
             created: resource['createdDate'],
-            last_modified: resource['modifiedDate']
+            last_modified: resource['modifiedDate'],
+            content : model_content,
+            writable : resource['editable']
         };
     };
 
@@ -101,7 +111,7 @@ define(function(require) {
      * @param {String} name
      * @param {Object} options
      */
-    Contents.prototype.get = function (path, type, options) {
+    Contents.prototype.get = function (path, options) {
         var that = this;
         var metadata_prm = gapi_utils.gapi_ready.then(
             $.proxy(drive_utils.get_resource_for_path, this, path, drive_utils.FileType.FILE));
@@ -112,13 +122,7 @@ define(function(require) {
         return Promise.all([metadata_prm, contents_prm]).then(function(values) {
             var metadata = values[0];
             var contents = values[1];
-            var model = files_resource_to_contents_model(path, metadata);
-            if(metadata.mimetyme == drive_utils.NOTEBOOK_MIMETYPE){
-                model['content'] = notebook_model.notebook_from_file_contents(contents);
-            } else {
-                model['content'] = JSON.parse(contents);
-            }
-            model['writable'] = metadata['editable'];
+            var model = files_resource_to_contents_model(path, metadata, contents);
             return model;
         });
     };
@@ -150,24 +154,20 @@ define(function(require) {
             var filename = values[1];
             var contents;
             var mime;
-            var description;
             if(options.type === 'notebook'){
                 contents = notebook_model.file_contents_from_notebook(
                     notebook_model.new_notebook()
                 );
                 mime = drive_utils.NOTEBOOK_MIMETYPE;
-                description = 'Jupyter Notebook';
             } else if (options.type === 'file'){
                 contents = ''; 
                 mime = 'text/plain';
-                description = 'text file';
             } else {
                 reject(new Error("I do not know how to create "+options.type+" (yet)"));
             }
             var metadata = {
                 'parents' : [{'id' : folder_id}],
                 'title' : filename,
-                'description': description,
                 'mimeType':mime
             }
             return drive_utils.upload_to_drive(contents, metadata);
@@ -233,14 +233,21 @@ define(function(require) {
         });
     };
 
-    Contents.prototype.save = function(path, model, options) {
+    Contents.prototype.save = function(path, model) {
+
         var that = this;
         return drive_utils.get_resource_for_path(path, drive_utils.FileType.FILE)
         .then(function(resource) {
-            var contents =
-        notebook_model.file_contents_from_notebook(model.content);
+            if (model.type === 'notebook'){
+
+                var contents =
+                    notebook_model.file_contents_from_notebook(model.content);
+            } else {
+                var contents = model.content;
+            }
+
             var save = function() {
-                return drive_utils.upload_to_drive(contents, {}, resource['id']);
+                return drive_utils.upload_to_drive(contents, undefined, resource['id']);
             };
             if (resource['headRevisionId'] !=
                 that.last_observed_revision[resource['id']]) {
@@ -268,6 +275,7 @@ define(function(require) {
         })
         .then(function(resource) {
             that.observe_file_resource(resource);
+            console.warn('shoudl observe');
             return files_resource_to_contents_model(path, resource);
         });
     };
@@ -323,7 +331,7 @@ define(function(require) {
         .then(function(values) {
             var file_id = values[0];
             var contents = values[1];
-            return drive_utils.upload_to_drive(contents, {}, file_id);
+            return drive_utils.upload_to_drive(contents, undefined, file_id);
         });
     };
 

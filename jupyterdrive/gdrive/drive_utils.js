@@ -209,11 +209,17 @@ define(function(require) {
         var delimiter = '\r\n--' + MULTIPART_BOUNDARY + '\r\n';
         var close_delim = '\r\n--' + MULTIPART_BOUNDARY + '--';
         var body = delimiter +
-            'Content-Type: application/json\r\n\r\n' +
-            JSON.stringify(metadata) +
-            delimiter +
-            'Content-Type: ' + NOTEBOOK_MIMETYPE + '\r\n' +
-            '\r\n' +
+            'Content-Type: application/json\r\n\r\n';
+        var mime;
+        if(metadata){
+            mime = metadata.mimeType;
+            body += JSON.stringify(metadata);
+        }
+        body += delimiter;
+        if(mime){
+            body+='Content-Type: ' + mime + '\r\n';
+        }
+        body +='\r\n' +
             data +
             close_delim;
 
