@@ -66,7 +66,7 @@ define(function(require) {
      */
     var files_resource_to_contents_model = function(path, resource, content) {
         var title = resource['title'];
-        var mimetype = resource['mimeType']
+        var mimetype = resource['mimeType'];
 
         // Determine resource type.
         var nbextension = '.ipynb';
@@ -78,7 +78,7 @@ define(function(require) {
             title.indexOf(nbextension, title.length - nbextension.length) !== -1) {
             type = 'notebook';
             if( typeof content !== 'undefined'){
-                model_content = notebook_model.notebook_from_file_contents(content)
+                model_content = notebook_model.notebook_from_file_contents(content);
             }
         } else {
             if( typeof content !== 'undefined'){
@@ -130,7 +130,8 @@ define(function(require) {
     Contents.prototype._new_untitled_dir = function(path, options){
 
         var folder_id_prm = gapi_utils.gapi_ready
-        .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.Folder))
+        .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.Folder));
+
         var filename_prm = folder_id_prm.then(
                 function(data){ return drive_utils.get_new_filename(data, '', 'Untilted_Folder');}
         );
@@ -261,6 +262,11 @@ define(function(require) {
         });
     };
 
+    /**
+     * Given a path and a model, save the document.
+     * If the resource has been modifeied on Drive in the 
+     * meantime, prompt user for overwrite.
+     **/
     Contents.prototype.save = function(path, model) {
 
         var that = this;
@@ -426,7 +432,7 @@ define(function(require) {
                 };
                 if (page_token) {
                     params['pageToken'] = page_token;
-                }
+                };
                 var request = gapi.client.drive.files.list(params)
                 return gapi_utils.execute(request)
                 .then(function(response) {
