@@ -71,7 +71,7 @@ define(function(require) {
         var notebook_copy = JSON.parse(JSON.stringify(notebook));
         var split_lines = function(obj) {
             if(typeof(obj)!=='string'){
-                return object
+                return obj;
             }
             return obj.split('\n').map(function(line, idx, array) {
                 if (idx == array.length - 1) {
