@@ -108,7 +108,7 @@ define(function(require) {
         var format = model.format;
         if (model['type'] === 'notebook') {
             content = notebook_model.file_contents_from_notebook(content);
-            format = format = 'json';
+            format = 'json';
             mimetype = drive_utils.NOTEBOOK_MIMETYPE;
         } else if (model['type'] === 'file') {
             format = format || 'text/plain';
