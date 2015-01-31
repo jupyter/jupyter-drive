@@ -372,8 +372,11 @@ define(function(require) {
             .then(function(file_resource) {
                 return that.save_existing(file_resource, model)
             }, function(error) {
-                // If the file does not exist (but the directory does) then a new
-                // file must be uploaded.
+                // If the file does not exist (but the directory does) then a
+                // new file must be uploaded.
+                if (error.name !== 'NotFoundError') {
+                    return Promise.reject(error);
+                }
                 model['name'] = filename;
                 return that.upload_new(folder_resource['id'], model)
             });
