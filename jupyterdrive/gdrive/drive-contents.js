@@ -146,7 +146,6 @@ define(function(require) {
      * @return {Promise} A promise fullfilled with the resource of the saved file.
      */
     Contents.prototype.save_existing = function(resource, model) {
-        console.log(model);
         var that = this;
         var converted = contents_model_to_metadata_and_bytes(model);
         var contents = converted[1];
@@ -185,7 +184,6 @@ define(function(require) {
      * @return {Promise} A promise fullfilled with the resource of the saved file.
      */
     Contents.prototype.upload_new = function(folder_id, model) {
-        console.log(model);
         var that = this;
 
         var converted = contents_model_to_metadata_and_bytes(model);
