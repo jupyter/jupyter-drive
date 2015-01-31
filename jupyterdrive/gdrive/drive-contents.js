@@ -280,7 +280,7 @@ define(function(require) {
                 'format' : 'json'
             }
         } else {
-            throw ("Unrecognized type " + options['type']);
+            return Promise.reject(new Error("Unrecognized type " + options['type']));
         }
 
         var that = this;
