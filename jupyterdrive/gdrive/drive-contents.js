@@ -98,6 +98,109 @@ define(function(require) {
     };
 
     /**
+     * Takes a contents model and converts it into metadata and bytes for
+     * Google Drive upload.
+     */
+    var contents_model_to_metadata_and_bytes = function(model) {
+        var mime_type = '';
+        var content = model.content;
+        var mimetype = model.mimetype;
+        var format = model.format;
+        if (model['type'] === 'notebook') {
+            content = notebook_model.file_contents_from_notebook(content);
+            format = format = 'json';
+            mimetype = drive_utils.NOTEBOOK_MIMETYPE;
+        } else if (model['type'] === 'file') {
+            format = format || 'text/plain';
+        } else if (model['type'] === 'directory') {
+            format = 'json'
+            mimetype = drive_utils.FOLDER_MIME_TYPE;
+        } else {
+            throw ("Unrecognized type " + model['type']);
+        }
+
+        // Set mimetype according to format if it's not set
+        if (format == 'json') {
+            content = JSON.stringify(content);
+            mimetype = mimetype || 'application/json';
+        } else if (format == 'base64') {
+            mimetype = mimetype || 'application/octet-stream';
+        } else if (format == 'text') {
+            mimetype = mimetype || 'text/plain';
+        } else {
+            throw ("Unrecognized format " + format)
+        }
+
+        var metadata = {
+            'title' : model['name'],
+            'mimeType' : mimetype
+        };
+
+        return [metadata, content];
+    }
+
+    /**
+     * Saves a version of an existing file on drive
+     * @param {Object} resource The Drive resource representing the file
+     * @param {Object} model The IPython model object to be saved
+     * @return {Promise} A promise fullfilled with the resource of the saved file.
+     */
+    Contents.prototype.save_existing = function(resource, model) {
+        console.log(model);
+        var that = this;
+        var converted = contents_model_to_metadata_and_bytes(model);
+        var contents = converted[1];
+        var save = function() {
+            return drive_utils.upload_to_drive(contents, undefined, resource['id']);
+        };
+        if (resource['headRevisionId'] !=
+            that.last_observed_revision[resource['id']]) {
+            // The revision id of the files resource does not match the
+            // cached revision id for this file.  This implies that the
+            // file has been modified by another user/tab during this
+            // session.  Before saving, the user must be warned that they
+            // may be overwriting the work of another user.
+            return new Promise(function(resolve, reject) {
+                var options = {
+                    title: 'File modified by other user',
+                    body: ('Another user has modified this file.  Click'
+                           + ' ok to overwrite this file with your'
+                           + ' content.'),
+                    buttons: {
+                        'ok': { click : function() { resolve(save()); },
+                              },
+                        'cancel': { click : function() { reject(new Error('save cancelled')); } }
+                    }
+                };
+                dialog.modal(options);
+            });
+        }
+        return save();
+    }
+
+    /**
+     * Uploads a model to drive
+     * @param {string} folder_id The id of the folder to create the file in
+     * @param {Object} model The IPython model object to be saved
+     * @return {Promise} A promise fullfilled with the resource of the saved file.
+     */
+    Contents.prototype.upload_new = function(folder_id, model) {
+        console.log(model);
+        var that = this;
+
+        var converted = contents_model_to_metadata_and_bytes(model);
+        var metadata = converted[0];
+        var contents = converted[1];
+        metadata['parents'] = [{'id' : folder_id}];
+
+        if (model['type'] === 'directory') {
+            return gapi_utils.execute(gapi.client.drive.files.insert({'resource': metadata}));
+        } else {
+            return drive_utils.upload_to_drive(contents, metadata);
+        }
+    }
+
+    /**
      * Notebook Functions
      */
 
@@ -136,38 +239,7 @@ define(function(require) {
         });
     };
 
-    Contents.prototype._new_untitled_dir = function(path, options){
 
-        var folder_id_prm = gapi_utils.gapi_ready
-        .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.Folder));
-
-        var filename_prm = folder_id_prm.then(
-                function(data){ return drive_utils.get_new_filename(data, '', 'Untilted_Folder');}
-        );
-
-        return Promise.all([folder_id_prm, filename_prm]).then(function(values) {
-            var folder_id = values[0];
-            var filename = values[1];
-            var mime = drive_utils.FOLDER_MIME_TYPE;
-
-            var metadata = {
-                'parents' : [{'id' : folder_id}],
-                'title' : filename,
-                'mimeType':mime
-            }
-            return gapi_utils.execute(gapi.client.drive.files.insert({'resource': metadata}));
-        })
-
-
-    }
-
-    /**
-     * Creates a new file at the specified directory path.
-     *
-     * @method new_untitled
-     * @param {String} path The directory in which to create the new file
-     * @param {Object} options Includes 'extension' - the extension to use if name not specified.
-     */
     /**
      * Creates a new untitled file or directory in the specified directory path.
      *
@@ -178,40 +250,53 @@ define(function(require) {
      *      type: model type to create ('notebook', 'file', or 'directory')
      */
     Contents.prototype.new_untitled = function(path, options) {
-        if(options.type == 'directory'){
-            return this._new_untitled_dir(path, options);
-
+        // Construct all data needed to upload file
+        var default_ext = '';
+        var base_name = '';
+        var model = null;
+        if (options['type'] === 'notebook') {
+            default_ext = '.ipynb';
+            base_name = 'Untitled'
+            model = {
+                'type': 'notebook',
+                'content': notebook_model.new_notebook(),
+                'mimetype': drive_utils.NOTEBOOK_MIMETYPE,
+                'format': 'json'
+            };
+        } else if (options['type'] === 'file') {
+            default_ext = '.txt';
+            base_name = 'Untitled';
+            model = {
+                'type': 'file',
+                'content': '',
+                'mimetype': 'text/plain',
+                'format': 'text'
+            };
+        } else if (options['type'] === 'directory') {
+            base_name = 'Untitled_Folder';
+            model = {
+                'type': 'directory',
+                'content': {},
+                'format' : 'json'
+            }
+        } else {
+            throw ("Unrecognized type " + options['type']);
         }
+
+        var that = this;
         var folder_id_prm = gapi_utils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.Folder))
-        var filename_prm = folder_id_prm.then(
-                function(data){ return drive_utils.get_new_filename(data, options.ext)}
-        );
+        var filename_prm = folder_id_prm.then(function(resource){
+            return drive_utils.get_new_filename(resource, options['ext'] || default_ext, base_name);
+        });
         return Promise.all([folder_id_prm, filename_prm]).then(function(values) {
             var folder_id = values[0];
             var filename = values[1];
-            var contents;
-            var mime;
-            if(options.type === 'notebook'){
-                contents = notebook_model.file_contents_from_notebook(
-                    notebook_model.new_notebook()
-                );
-                mime = drive_utils.NOTEBOOK_MIMETYPE;
-            } else if (options.type === 'file'){
-                contents = ''; 
-                mime = 'text/plain';
-            } else {
-                Promise.reject(new Error("I do not know how to create "+options.type+" (yet)"));
-            }
-            var metadata = {
-                'parents' : [{'id' : folder_id}],
-                'title' : filename,
-                'mimeType':mime
-            }
-            return drive_utils.upload_to_drive(contents, metadata);
+            model['name'] = filename;
+            return that.upload_new(folder_id, model);
         })
         .then(function(resource) {
-            var fullpath = path + '/' + resource['title'];
+            var fullpath = utils.url_path_join(path, resource['title']);
             return files_resource_to_contents_model(fullpath, resource);
         });
     };
@@ -277,49 +362,25 @@ define(function(require) {
      * meantime, prompt user for overwrite.
      **/
     Contents.prototype.save = function(path, model) {
-
         var that = this;
-        return drive_utils.get_resource_for_path(path, drive_utils.FileType.FILE)
-        .then(function(resource) {
-            if (model.type === 'notebook'){
-
-                var contents =
-                    notebook_model.file_contents_from_notebook(model.content);
-            } else {
-                var contents = model.content;
-            }
-
-            var save = function() {
-                return drive_utils.upload_to_drive(contents, undefined, resource['id']);
-            };
-            if (resource['headRevisionId'] !=
-                that.last_observed_revision[resource['id']]) {
-                // The revision id of the files resource does not match the
-                // cached revision id for this file.  This implies that the
-                // file has been modified by another user/tab during this
-                // session.  Before saving, the user must be warned that they
-                // may be overwriting the work of another user.
-                return new Promise(function(resolve, reject) {
-                    var options = {
-                        title: 'File modified by other user',
-                        body: ('Another user has modified this file.  Click'
-                               + ' ok to overwrite this file with your'
-                               + ' content.'),
-                        buttons: {
-                            'ok': { click : function() { resolve(save()); },
-                                  },
-                            'cancel': { click : function() { reject(new Error('save cancelled')); } }
-                        }
-                    };
-                    dialog.modal(options);
-                });
-            }
-            return save();
+        var path_and_filename = utils.url_path_split(path);
+        var path = path_and_filename[0];
+        var filename = path_and_filename[1];
+        return drive_utils.get_resource_for_path(path, drive_utils.FileType.FOLDER)
+        .then(function(folder_resource) {
+            return drive_utils.get_resource_for_relative_path(filename, drive_utils.FileType.FILE, false, folder_resource['id'])
+            .then(function(file_resource) {
+                return that.save_existing(file_resource, model)
+            }, function(error) {
+                // If the file does not exist (but the directory does) then a new
+                // file must be uploaded.
+                model['name'] = filename;
+                return that.upload_new(folder_resource['id'], model)
+            });
         })
-        .then(function(resource) {
-            that.observe_file_resource(resource);
-            console.warn('shoudl observe');
-            return files_resource_to_contents_model(path, resource);
+        .then(function(file_resource) {
+            that.observe_file_resource(file_resource);
+            return files_resource_to_contents_model(path, file_resource);
         });
     };
 
