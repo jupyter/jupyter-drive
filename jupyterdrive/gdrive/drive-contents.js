@@ -457,7 +457,7 @@ define(function(require) {
         })
         .then(function(items) {
             var list = $.map(items, function(resource) {
-                var fullpath = path + '/' + resource['title'];
+                var fullpath = utils.url_path_join(path, resource['title']);
                 return files_resource_to_contents_model(fullpath, resource)
             });
             return {content: list};
