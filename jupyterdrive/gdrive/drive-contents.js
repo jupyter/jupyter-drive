@@ -384,6 +384,11 @@ define(function(require) {
         });
     };
 
+
+    Contents.prototype.copy = function(path, model) {
+        return Promise.reject(new Error('Copy not implemented yet.'));
+    };
+
     /**
      * Checkpointing Functions
      */
