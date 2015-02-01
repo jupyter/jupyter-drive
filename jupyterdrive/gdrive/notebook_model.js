@@ -65,7 +65,7 @@ define(function(require) {
     /**
      * Creates the contents of a file from a JSON notebook representation.
      * @param {Object} notebook a JSON representation of the notebook.
-     * @return {string} The contents of the file, as a string.
+     * @return {Object} The JSON representation with lines split.
      */
     var file_contents_from_notebook = function(notebook) {
         var notebook_copy = JSON.parse(JSON.stringify(notebook));
@@ -83,7 +83,7 @@ define(function(require) {
         };
 
         transform_notebook(notebook, split_lines);
-        return JSON.stringify(notebook_copy);
+        return notebook_copy;
     };
 
     /**

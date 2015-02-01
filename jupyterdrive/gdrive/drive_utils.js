@@ -11,21 +11,9 @@ define(function(require) {
 
     var FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
 
-    /**
-     * Name of newly created notebook files.
-     * @type {string}
-     */
-    var NEW_NOTEBOOK_TITLE = 'Untitled';
-
-    /**
-     * Extension for notebook files.
-     * @type {string}
-     */
-    var NOTEBOOK_EXTENSION = 'ipynb';
+    var NOTEBOOK_MIMETYPE = 'application/ipynb';
 
     var MULTIPART_BOUNDARY = '-------314159265358979323846';
-
-    var NOTEBOOK_MIMETYPE = 'application/ipynb';
 
     /** Enum for file types */
     var FileType = {
@@ -43,9 +31,9 @@ define(function(require) {
      *
      * @param {String} path_component The file/folder to find
      * @param {FileType} type type of resource (file or folder)
-     * @param {String} folder_id The Google Drive folder id
      * @param {boolean} opt_child_resource If True, fetches a child resource
      *     which is smaller and probably quicker to obtain the a Files resource.
+     * @param {String} folder_id The Google Drive folder id
      * @return A promise fullfilled by either the files resource for the given
      *     file/folder, or rejected with an Error object.
      */
@@ -101,7 +89,12 @@ define(function(require) {
     var get_resource_for_path = function(path, type) {
         var components = split_path(path);
         if (components.length == 0) {
-            return Promise.reject(new Error('Cannot get root resource'));
+            return gapi_utils.execute(gapi.client.drive.about.get())
+            .then(function(resource) {
+                var id = resource['rootFolderId'];
+                var request = gapi.client.drive.files.get({ 'fileId': id });
+                return gapi_utils.execute(request);
+            });
         }
         var result = Promise.resolve({id: 'root'});
         for (var i = 0; i < components.length; i++) {
@@ -146,19 +139,16 @@ define(function(require) {
      * @param {function(string)} callback Called with the name for the new file.
      * @param {string} opt_folderId optinal Drive folder Id to search for
      *     filenames.  Uses root, if none is specified.
+     * @param {string} ext The extension to use
+     * @param {string} base_name The base name of the file
      * @return A promise fullfilled with the new filename.  In case of errors,
      *     'Untitled.ipynb' is used as a fallback.
      */
-    var get_new_filename = function(opt_folderId, ext, default_name) {
+    var get_new_filename = function(opt_folderId, ext, base_name) {
         /** @type {string} */
         var folderId = opt_folderId || 'root';
-        if ( typeof ext === 'undefined'){
-            ext = '.'+NOTEBOOK_EXTENSION;
-        }
 
-        default_name = default_name || NEW_NOTEBOOK_TITLE
-
-        var query = 'title contains \'' + default_name + '\'' +
+        var query = 'title contains \'' + base_name + '\'' +
             ' and \'' + folderId + '\' in parents' +
             ' and trashed = false';
         var request = gapi.client.drive.files.list({
@@ -167,7 +157,7 @@ define(function(require) {
             'q': query
         });
 
-        var fallbackFilename = default_name + ext;
+        var fallbackFilename = base_name + ext;
         return gapi_utils.execute(request)
         .then(function(response) {
             // Use 'Untitled.ipynb' as a fallback in case of error
@@ -183,7 +173,7 @@ define(function(require) {
             // names tried, and existingFilenames contains N elements.
             for (var i = 0; i <= existingFilenames.length; i++) {
                 /** @type {string} */
-                var filename = default_name + i + ext;
+                var filename = base_name + i + ext;
                 if (existingFilenames.indexOf(filename) == -1) {
                     return filename;
                 }
@@ -216,13 +206,16 @@ define(function(require) {
         var body = delimiter +
             'Content-Type: application/json\r\n\r\n';
         var mime;
-        if(metadata){
+        if (metadata) {
             mime = metadata.mimeType;
             body += JSON.stringify(metadata);
         }
         body += delimiter;
-        if(mime){
-            body+='Content-Type: ' + mime + '\r\n';
+        if (mime) {
+            body += 'Content-Type: ' + mime + '\r\n';
+            if (mime === 'application/octet-stream') {
+                body += 'Content-Transfer-Encoding: base64\r\n';
+            }
         }
         body +='\r\n' +
             data +
@@ -281,6 +274,7 @@ define(function(require) {
         FileType : FileType,
         split_path : split_path,
         get_id_for_path : get_id_for_path,
+        get_resource_for_relative_path : get_resource_for_relative_path,
         get_resource_for_path : get_resource_for_path,
         get_new_filename : get_new_filename,
         upload_to_drive : upload_to_drive, 
