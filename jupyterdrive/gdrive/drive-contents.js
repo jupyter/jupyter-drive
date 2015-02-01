@@ -392,6 +392,7 @@ define(function(require) {
         .then($.proxy(drive_utils.get_id_for_path, this, from_file, drive_utils.FileType.FILE))
         .then(function(file_id){
 
+            var request = gapi.client.drive.files.copy({ fileId: file_id, resource:{'title': 'decidedname'}});
             var res = gapi_utils.execute(request);
             return res;
         })
