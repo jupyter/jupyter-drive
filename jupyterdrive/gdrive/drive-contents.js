@@ -102,7 +102,6 @@ define(function(require) {
      * Google Drive upload.
      */
     var contents_model_to_metadata_and_bytes = function(model) {
-        var mime_type = '';
         var content = model.content;
         var mimetype = model.mimetype;
         var format = model.format;
@@ -350,7 +349,7 @@ define(function(require) {
         })
         .then(function(resource) {
             that.observe_file_resource(resource);
-            return files_resource_to_contents_model(path, resource);
+            return files_resource_to_contents_model(new_path, resource);
         });
     };
 
