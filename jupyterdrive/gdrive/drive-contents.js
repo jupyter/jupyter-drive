@@ -386,8 +386,24 @@ define(function(require) {
     };
 
 
-    Contents.prototype.copy = function(path, model) {
-        return Promise.reject(new Error('Copy not implemented yet.'));
+    Contents.prototype.copy = function(from_file, to_dir) {
+        var that = this;
+        return gapi_utils.gapi_ready
+        .then($.proxy(drive_utils.get_id_for_path, this, from_file, drive_utils.FileType.FILE))
+        .then(function(file_id){
+
+            var res = gapi_utils.execute(request);
+            return res;
+        })
+        .then(function(res){
+         return res
+        })
+        .catch(function(error){
+            console.warn(error)
+        });
+
+
+        //return Promise.reject(new Error('Copy not implemented yet.'));
     };
 
     /**
