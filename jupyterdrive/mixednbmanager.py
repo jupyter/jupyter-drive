@@ -41,7 +41,7 @@ class MixedContentsManager(ContentsManager):
 
     def get(self, path, **kwargs):
         if self.is_drive_path(path):
-            return {'type':'notebook'}
+            return self.client_side_contents_manager.get(path, **kwargs)
         return self.file_contents_manager.get(path, **kwargs)
 
     def save(self, model, path):
