@@ -5,14 +5,27 @@
 
 from IPython.html.services.contents.manager import ContentsManager
 from IPython.html.services.contents.filemanager import FileContentsManager
-from .clientsidenbmanager import ClientSideContentsManager
 
 class MixedContentsManager(ContentsManager):
+    """Content manager that mixes regular IPython content manager with Drive
+
+    For paths that do not start with gdrive/, this calls the regular IPython
+    content manager.  But for paths that start with gdrive/, it acts as a
+    minimal implementation, which implements the few methods that are still
+    required on the server side when using the Google Drive Contents class
+    on the JavaScript side.
+
+    The view handlers for notebooks and directories (/tree/) check with the
+    ContentsManager that their target exists so they can return 404 if not.
+    Using this class as the contents manager allows those pages to render
+    when the file is on Google Drive, and so the IPython server can't know about
+    whether the file exists or not.
+    """
+
     DRIVE_PATH_SENTINEL = 'gdrive'
 
     def __init__(self, **kwargs):
         self.file_contents_manager = FileContentsManager()
-        self.client_side_contents_manager = ClientSideContentsManager()
 
     def is_drive_path(self, path):
         components = path.split('/');
@@ -23,17 +36,17 @@ class MixedContentsManager(ContentsManager):
 
     def dir_exists(self, path):
         if self.is_drive_path(path):
-            return self.client_side_contents_manager.dir_exists(path)
+            return True
         return self.file_contents_manager.dir_exists(path)
 
     def is_hidden(self, path):
         if self.is_drive_path(path):
-            return self.client_side_contents_manager.is_hidden(path)
+            return False
         return self.file_contents_manager.is_hidden(path)
 
     def file_exists(self, path=''):
         if self.is_drive_path(path):
-            return self.client_side_contents_manager.file_exists(path)
+            return True
         return self.file_contents_manager.file_exists(path)
 
     def exists(self, path):
