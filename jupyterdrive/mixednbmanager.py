@@ -39,8 +39,10 @@ class MixedContentsManager(ContentsManager):
     def exists(self, path):
         return self.file_contents_manager.exists(path)
 
-    def get(self, path, content=True, type_=None, format=None):
-        return self.file_contents_manager.get(path, content=content, type_=type_, format=format)
+    def get(self, path, **kwargs):
+        if self.is_drive_path(path):
+            return {'type':'notebook'}
+        return self.file_contents_manager.get(path, **kwargs)
 
     def save(self, model, path):
         return self.file_contents_manager.save(model, path)
