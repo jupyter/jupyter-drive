@@ -14,6 +14,18 @@ define(function(require) {
     var local_contents = require('services/contents');
     var notebook_model = require('./notebook_model');
 
+    /** @type {Array} Array of objects with keys 'root' and 'contents' */
+    // TODO: make this configurable
+    var filesystem_scheme = [
+        {
+            'root': '',
+            'contents': local_contents
+        },
+        {
+            'root': 'gdrive',
+            'contents': drive_contents
+        }
+    ];
 
     var Contents = function(options) {
         // Constructor
@@ -26,23 +38,26 @@ define(function(require) {
         //  options: dictionary
         //      Dictionary of keyword arguments.
         //          base_url: string
-        this.local_contents = new local_contents.Contents(options);
-        this.drive_contents = new drive_contents.Contents(options);
+
+        // Generate a map from root directories, to Contents instances.
+        this.filesystem = {};
+        filesystem_scheme.forEach(function(fs) {
+            this.filesystem[fs['root']] = new fs['contents'].Contents(options);
+        }, this);
     };
 
-    /** @type {string} Sentinel for path in Google Drive */
-    var DRIVE_PATH_SENTINEL = 'gdrive';
-
     /**
-     * Generates the object that represents the Google Drive filesystem
-     * @return {Object} An object representing the Google Drive directory
+     * Generates the object that represents a filesystem
+     * @return {Object} An object representing a virtual directory.
      */
-    var drive_path_mountpoint = function() {
-        return {
-            type: 'directory',
-            name: DRIVE_PATH_SENTINEL,
-            path: DRIVE_PATH_SENTINEL,
-        };
+    Contents.prototype.virtual_fs_roots = function() {
+        return Object.keys(this.filesystem).map(function(root) {
+            return {
+                type: 'directory',
+                name: root,
+                path: root,
+            };
+        });
     };
 
     /**
@@ -50,47 +65,55 @@ define(function(require) {
      */
 
     /**
-     * Determine if a path belongs to Google Drive
-     * @param {string} path The path to check.
-     * @return {boolean} True if the path is a Google Drive path.
-     *
+     * Determine which Contents instance to use.
+     * @param {String} path The path to check.
+     * @return {String} The root path for the contents instance.
      */
-    var is_drive_path = function(path) {
+    Contents.prototype.get_fs_root = function(path) {
         var components = path.split('/');
-        return components.length > 0 && components[0] === DRIVE_PATH_SENTINEL;
+        if (components.length == 0) {
+            return '';
+        }
+        if (this.filesystem[components[0]]) {
+            return components[0];
+        }
+        return '';
     }
 
     /**
-     * Convert a path from notebook to Google Drive format
-     * @param {string} path The path to convert.
-     * @return {string} the converted path (gdrive/my/directory => my_directory)
+     * Convert a path from the virtual filesystem used by the front end, to the
+     * concrete filesystem used by the Contents instance.
+     * @param {String} root The root of the virtual mount point.
+     * @param {String} path The path to convert.
+     * @return {String} the converted path
      *
      */
-    var notebook_path_to_drive_path = function(path) {
-        var components = path.split('/');
-        return components.slice(1).join('/');
+    var from_virtual_path = function(root, path) {
+        return path.substr(root.length);
     }
 
     /**
-     * Convert a path from Google Drive to notebook format
-     * @param {string} path The path to convert.
-     * @return {string} the converted path (gdrive/my/directory => my_directory)
+     * Convert a path to the virtual filesystem used by the front end, from the
+     * concrete filesystem used by the Contents instance.
+     * @param {String} root The root of the virtual mount point.
+     * @param {String} path The path to convert.
+     * @return {String} the converted path
      *
      */
-    var drive_path_to_notebook_path = function(path) {
-        var components = path.split('/');
-        return [DRIVE_PATH_SENTINEL].concat(components).join('/');
+    var to_virtual_path = function(root, path) {
+        return utils.url_path_join(root, path);
     }
 
     /**
-     * Takes a files resource (an object with a 'path' key) and converts it
+     * Takes a file model, and convert its path to the virtual filesystem.
      * from Google Drive format
-     * @param {Object} obj The files object (this is modified by the function).
+     * @param {String} root The root of the virtual mount point.
+     * @param {Object} model The files model (this is modified by the function).
+     * @param {String} root The root path of the virtual filesystem
      */
-    var convert_response = function(obj) {
-        console.log(obj);
-        obj['path'] = drive_path_to_notebook_path(obj['path']);
-        return obj;
+    var to_virtual_model = function(root, model) {
+        model['path'] = to_virtual_path(root, model['path']);
+        return model;
     };
 
     /**
@@ -107,15 +130,14 @@ define(function(require) {
             // Contents instance to use.
             throw 'path_args was empty, so route_function cannot determine which Contents instance to use';
         }
-        if (is_drive_path(args[path_args[0]])) {
-            for (var i = 0; i < path_args.length; i++) {
-                var idx = path_args[i];
-                args[idx] = notebook_path_to_drive_path(args[idx]);    
-            }
-            return this.drive_contents[method_name].apply(this.drive_contents, args).then(drive_continuation);
-        } else {
-            return this.local_contents[method_name].apply(this.local_contents, args);
+        var root = this.get_fs_root(args[path_args[0]]);
+        for (var i = 0; i < path_args.length; i++) {
+            var idx = path_args[i];
+            args[idx] = from_virtual_path(root, args[idx]);
         }
+        var contents = this.filesystem[root];
+        return contents[method_name].apply(contents, args).then(
+            $.proxy(drive_continuation, this, root));
     }
 
     /**
@@ -123,11 +145,11 @@ define(function(require) {
      */
 
     Contents.prototype.get = function (path, type, options) {
-        return this.route_function('get', [0], arguments, convert_response);
+        return this.route_function('get', [0], arguments, to_virtual_model);
     };
 
     Contents.prototype.new_untitled = function(path, options) {
-        return this.route_function('new_untitled', [0], arguments, convert_response);
+        return this.route_function('new_untitled', [0], arguments, to_virtual_model);
     };
 
     Contents.prototype.delete = function(path) {
@@ -135,22 +157,25 @@ define(function(require) {
     };
 
     Contents.prototype.rename = function(path, new_path) {
-        return this.route_function('rename', [0, 1], arguments, convert_response);
+        return this.route_function('rename', [0, 1], arguments, to_virtual_model);
     };
 
     Contents.prototype.save = function(path, model, options) {
-        return this.route_function('save', [0], arguments, convert_response);
+        return this.route_function('save', [0], arguments, to_virtual_model);
     };
 
     Contents.prototype.list_contents = function(path, options) {
-        return this.route_function('list_contents', [0], arguments, function(response) {
-            response['content'].forEach(convert_response);
+        var that = this;
+        return this.route_function('list_contents', [0], arguments, function(root, response) {
+            response['content'].forEach($.proxy(to_virtual_model, this, root));
             return response;
         }).then(function(response) {
+            console.log(response);
             if (path === '') {
                 // If this is the root path, add the drive mountpoint directory.
-                response['content'].push(drive_path_mountpoint());
+                response['content'] = response['content'].concat(that.virtual_fs_roots());
             }
+            console.log(response);
             return response;
         });
     };
