@@ -78,7 +78,7 @@ define(function(require) {
             return components[0];
         }
         return '';
-    }
+    };
 
     /**
      * Convert a path from the virtual filesystem used by the front end, to the
@@ -90,7 +90,7 @@ define(function(require) {
      */
     var from_virtual_path = function(root, path) {
         return path.substr(root.length);
-    }
+    };
 
     /**
      * Convert a path to the virtual filesystem used by the front end, from the
@@ -102,18 +102,30 @@ define(function(require) {
      */
     var to_virtual_path = function(root, path) {
         return utils.url_path_join(root, path);
-    }
+    };
 
     /**
      * Takes a file model, and convert its path to the virtual filesystem.
      * from Google Drive format
      * @param {String} root The root of the virtual mount point.
-     * @param {Object} model The files model (this is modified by the function).
-     * @param {String} root The root path of the virtual filesystem
+     * @param {Object} model The file model (this is modified by the function).
+     * @return {Object} the converted file model
      */
     var to_virtual_model = function(root, model) {
         model['path'] = to_virtual_path(root, model['path']);
         return model;
+    };
+
+    /**
+     * Takes a file list, and convert its path to the virtual filesystem.
+     * from Google Drive format
+     * @param {String} root The root of the virtual mount point.
+     * @param {Object} model The file list (this is modified by the function).
+     * @return {Object} The converted file list
+     */
+    var to_virtual_list = function(root, list) {
+        list['content'].forEach($.proxy(to_virtual_model, this, root));
+        return list;
     };
 
     /**
@@ -138,7 +150,7 @@ define(function(require) {
         var contents = this.filesystem[root];
         return contents[method_name].apply(contents, args).then(
             $.proxy(drive_continuation, this, root));
-    }
+    };
 
     /**
      * File management functions
@@ -166,16 +178,12 @@ define(function(require) {
 
     Contents.prototype.list_contents = function(path, options) {
         var that = this;
-        return this.route_function('list_contents', [0], arguments, function(root, response) {
-            response['content'].forEach($.proxy(to_virtual_model, this, root));
-            return response;
-        }).then(function(response) {
-            console.log(response);
+        return this.route_function('list_contents', [0], arguments, to_virtual_list)
+        .then(function(response) {
             if (path === '') {
                 // If this is the root path, add the drive mountpoint directory.
                 response['content'] = response['content'].concat(that.virtual_fs_roots());
             }
-            console.log(response);
             return response;
         });
     };
