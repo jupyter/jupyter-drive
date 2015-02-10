@@ -13,10 +13,12 @@ import io
 from IPython.config import Config, JSONFileConfigLoader, ConfigFileNotFound
 
 
-def install(profile='default', symlink=True, mixed=False):
+def install(profile='default', symlink=True, mixed=False, user=False):
     dname = os.path.dirname(__file__)
     # miht want to check if already installed and overwrite if exist
-    nbe.install_nbextension(os.path.join(dname,'gdrive'), symlink=symlink)
+    nbe.install_nbextension(os.path.join(dname,'gdrive'),
+                                symlink=symlink,
+                                   user=user)
     activate(profile, mixed=mixed)
 
 def activate(profile,mixed=False):
@@ -36,9 +38,9 @@ def activate(profile,mixed=False):
             # but cannot do anythin automatically if contents_manager_calss is set
             raise ValueError('You already got some configuration that will conflict with google drive. Bailin out')
     if mixed :
-        drive_config  = JSONFileConfigLoader('ipython_notebook_config.json', dname).load_config()
-    else :
         drive_config  = JSONFileConfigLoader('mixed_contents.json', dname).load_config()
+    else :
+        drive_config  = JSONFileConfigLoader('ipython_notebook_config.json', dname).load_config()
     config.merge(drive_config)
     print('Activating Google Drive integration for profile "%s"' % profile)
     config['nbformat'] = 1
@@ -63,8 +65,12 @@ def main(argv=None):
                     action="store_true")
     parser.add_argument("-S", "--no-symlink", help="do not symlink at install time",
                     action="store_false")
+    parser.add_argument("-u", "--user", help="force install in user land",
+                    action="store_true")
     args = parser.parse_args(argv)
     if not args.profile:
         parser.print_help()
-    sys.exit(0)
-    install(profile=args.profile, mixed=args.mixed, symlink=args.no_symlink)
+        sys.exit(0)
+    install(profile=args.profile,
+              mixed=args.mixed,
+            symlink=args.no_symlink)

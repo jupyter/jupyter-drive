@@ -1,14 +1,14 @@
 # Google Drive support for Jupyter Notebook
 
-This repository contains a custom
+This repository contains customs
 [Contents](https://github.com/ipython/ipython/blob/master/IPython/html/static/services/contents.js) class that allows IPython to use
 Google Drive for file management.  The code is a organized as a python package
-that contains functions to install a Jupyter notebook JavaScript extension,
+that contains functions to install a Jupyter Notebook JavaScript extension,
 and activate/deactivate different IPython profiles to be used with Google drive.
 
 To install this package, clone this repository locally and run
 
-```
+```bash
 pip install -e .
 ```
 
@@ -19,19 +19,44 @@ immediately.
 To install the notebook extension and activate your profile with Google
 Drive, run
 
-```
-python -m jupyterdrive <profilename>
+```bash
+python -m jupyterdrive <profile_name>
 ```
 
-If no profile name is given, Jupyter drive will install itself in the default profile.
+Be sure that the profile exist before running the command. You can create a new profile with
 
-Be sure that the profile exist before running the command. You can create a new profile with 
-
-```
+```bash
 ipython profile create <profilename>
 ```
 
 Please refer to IPython documentation for more info on profiles.
+
+## Symlink files
+
+By default all the Javascript files will be symlinked, so any update to the package python
+or javascript will be reflected on your python server.
+use the  `--no-symlink` option to actually copy the file on their final destination.
+
+## Mixed contents
+
+You can also installed the `MixedContentsManager`, to do so install as previously with
+the `--mixed` options. For example on the default profile :
+
+```bash
+python -m jupyterdrive default --mixed
+```
+
+The mixed content manager will show both contents from local hard drive and remote
+google drive as two directory in your dashboard.
+
+
+## User install
+
+If IPython has been installed systemwid, you might need to pass `--user` to
+install the extension in a user-owned profile location.
+
+
+
 
 It is not yet possible to deactivate the drive integration automatically. But
 you can get rid of `~/.ipython/profile_defaut/ipython_notebook_config.json`
@@ -55,7 +80,7 @@ to display the list of files/directories in the tree view.
 
 The request pop-up looks like the following:
 
-![](img/auth.png)
+![auth screenshot](img/auth.png)
 
 Clicking ok will open a Google Oauth pop-up.  You will see that the `Jupyter
 Drive` application want access to some informations about your files. Keep that
@@ -66,4 +91,3 @@ in mind if you want to revoke access at a later point.
 Once you click `Accept` you should be able to start creating new notebooks on
 Google Drive, and open existing ones created by this application, and
 view files/directories in the tree view.
-
