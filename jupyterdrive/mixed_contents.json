@@ -1,0 +1,7 @@
+{
+  "version" : 1,
+  "NotebookApp":{
+    "tornado_settings": {"contents_js_source": "nbextensions/gdrive/mixed-contents"}, 
+    "contents_manager_class": "jupyterdrive.mixednbmanager.MixedContentsManager"
+  }
+}

@@ -1,4 +1,3 @@
-
 import IPython
 import IPython.html.nbextensions as nbe
 from IPython.utils.path import locate_profile
@@ -14,13 +13,13 @@ import io
 from IPython.config import Config, JSONFileConfigLoader, ConfigFileNotFound
 
 
-def install(profile='default', symlink=True):
+def install(profile='default', symlink=True, mixed=False):
     dname = os.path.dirname(__file__)
     # miht want to check if already installed and overwrite if exist
     nbe.install_nbextension(os.path.join(dname,'gdrive'), symlink=symlink)
-    activate(profile)
+    activate(profile, mixed=mixed)
 
-def activate(profile):
+def activate(profile,mixed=False):
     dname = os.path.dirname(__file__)
     pdir = locate_profile(profile)
 
@@ -36,8 +35,10 @@ def activate(profile):
             # TODO, manually merge tornado settin if exist
             # but cannot do anythin automatically if contents_manager_calss is set
             raise ValueError('You already got some configuration that will conflict with google drive. Bailin out')
-
-    drive_config  = JSONFileConfigLoader('ipython_notebook_config.json', dname).load_config()
+    if mixed :
+        drive_config  = JSONFileConfigLoader('ipython_notebook_config.json', dname).load_config()
+    else :
+        drive_config  = JSONFileConfigLoader('mixed_contents.json', dname).load_config()
     config.merge(drive_config)
     print('Activating Google Drive integration for profile "%s"' % profile)
     config['nbformat'] = 1
@@ -57,7 +58,13 @@ def main(argv=None):
     prog = '{} -m jupyterdrive'.format(os.path.basename(sys.executable))
     parser = argparse.ArgumentParser(prog=prog,
                     description='Install Google Drive integration for Jupyter.')
-    parser.add_argument('profile', nargs='?', default='default')
+    parser.add_argument('profile', nargs='?', default=None, metavar=('<profile_name>'))
+    parser.add_argument("-m", "--mixed", help="Installed the mixed content manager",
+                    action="store_true")
+    parser.add_argument("-S", "--no-symlink", help="do not symlink at install time",
+                    action="store_false")
     args = parser.parse_args(argv)
-    install(profile=args.profile)
-
+    if not args.profile:
+        parser.print_help()
+    sys.exit(0)
+    install(profile=args.profile, mixed=args.mixed, symlink=args.no_symlink)
