@@ -50,13 +50,16 @@ The mixed content manager will show both contents from local hard drive and remo
 google drive as two directory in your dashboard.
 
 
-## User install
+## Other options
 
-If IPython has been installed systemwid, you might need to pass `--user` to
-install the extension in a user-owned profile location.
+If IPython has been installed system wide, in a virtual environment or with
+some custom setup you might need to pass `--user`, `-prefix <prefix>` or
+`--path <path>` option to install the extension in a user-owned profile
+location.
 
+See `python -m jupyterdrive --help` for more information.
 
-
+## deactivate a profile
 
 It is not yet possible to deactivate the drive integration automatically. But
 you can get rid of `~/.ipython/profile_defaut/ipython_notebook_config.json`
@@ -65,10 +68,6 @@ config file to deactivate Google Drive as well as other config options.
 The configuration of IPython/Jupyter is done through the `.json` file in the
 profile situated in the profile and will take precedence on configuration done
 in `.py` files, though you can still use non conflicting options.
-
-Note that the `gdrive` folder is actually symlinked into nbextension while this
-project is in developpement.
-
 
 # First launch
 
@@ -82,7 +81,7 @@ The request pop-up looks like the following:
 
 ![auth screenshot](img/auth.png)
 
-Clicking ok will open a Google Oauth pop-up.  You will see that the `Jupyter
+Clicking ok will open a Google OAuth pop-up.  You will see that the `Jupyter
 Drive` application want access to some informations about your files. Keep that
 in mind if you want to revoke access at a later point.
 
