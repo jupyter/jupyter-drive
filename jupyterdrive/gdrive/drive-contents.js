@@ -24,13 +24,18 @@ define(function(require) {
         //      Dictionary of keyword arguments.
         //          base_url: string
         this.base_url = options.base_url;
-
+        this.config  = options.common_config;
         /**
          * Stores the revision id from the last save or load.  This is used
          * when checking if a file has been modified by another user.
          */
         this.last_observed_revision = {};
-        gapi_utils.gapi_ready.then(drive_utils.set_user_info);
+        var that = this;
+        this.config.loaded.then(function(data){
+          gapi_utils.config(that.config);
+          gapi_utils.gapi_ready.then(drive_utils.set_user_info);
+        })
+
     };
 
     /**
@@ -355,7 +360,7 @@ define(function(require) {
 
     /**
      * Given a path and a model, save the document.
-     * If the resource has been modifeied on Drive in the 
+     * If the resource has been modifeied on Drive in the
      * meantime, prompt user for overwrite.
      **/
     Contents.prototype.save = function(path, model) {

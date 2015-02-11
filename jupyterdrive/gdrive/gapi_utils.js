@@ -8,11 +8,18 @@ define(function(require) {
     var dialog = require('base/js/dialog');
     var utils = require('base/js/utils');
 
+
+    var default_config = {
     /**
      * Google API Client ID
      * @type {string}
      */
-    var CLIENT_ID = '763546234320-uvcktfp0udklafjqv00qjgivpjh0t33p.apps.googleusercontent.com';
+        CLIENT_ID : '763546234320-uvcktfp0udklafjqv00qjgivpjh0t33p.apps.googleusercontent.com',
+        APP_ID : '763546234320',
+        FILE_SCOPE : true,
+        METADATA_SCOPE : true,
+    }
+
 
     /**
      * Google API App ID
@@ -166,12 +173,20 @@ define(function(require) {
      * @param {boolean} opt_withPopup If true, display popup without first
      *     trying to authorize without a popup.
      */
-    var authorize = function(opt_withPopup) {
+    var authorize = function(opt_withPopup, conf) {
+        var config = $.extend({}, default_config, conf.data['gdrive']);
+        var scope = [];
+        if(config.FILE_SCOPE){
+          scope.push(FILES_OAUTH_SCOPE)
+        }
+        if(config.METADATA_SCOPE){
+          scope.push(METADATA_OAUTH_SCOPE)
+        }
         var authorize_internal = function() {
             return new Promise(function(resolve, reject) {
                 gapi.auth.authorize({
-                    'client_id': CLIENT_ID,
-                    'scope': [FILES_OAUTH_SCOPE, METADATA_OAUTH_SCOPE],
+                    'client_id': config.CLIENT_ID,
+                    'scope': scope,
                     'immediate': !opt_withPopup
                 }, function(result) {
                     resolve(wrap_result(result));
@@ -208,21 +223,38 @@ define(function(require) {
                     error.name = 'GapiError';
                     return Promise.reject(error);
                 }
-                return authorize(true);
+                return authorize(true, config);
             });
         }
     };
 
+    var _handle = {};
+    var _conf_prm = new Promise(function(resolve){
+        _handle.resolve = resolve;
+    })
+
+
+    var config = function(conf){
+      _handle.resolve(conf);
+    }
+
     /**
      * Promise fullfilled when gapi is loaded, and authorization is complete.
      */
-    var gapi_ready = load_gapi_1().then(load_gapi_2).then(authorize);
+    var load_gapi = load_gapi_1().then(load_gapi_2)
+    var gapi_ready = Promise.all([load_gapi, _conf_prm]).then(
+      function(values){
+        var config = values[1];
+        return authorize(null, config);
+      }
+    );
 
     var drive_utils = {
         APP_ID : APP_ID,
         download : download,
         execute : execute,
-        gapi_ready : gapi_ready
+        gapi_ready : gapi_ready,
+        config:config
     };
 
     return drive_utils;
