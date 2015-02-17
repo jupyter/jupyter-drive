@@ -233,7 +233,10 @@ define(function(require) {
         _handle.resolve = resolve;
     })
 
-
+    /**
+     * calling config with conf, results in the promise _conf_prm being resolved with conf.
+     * This then triggers the rest of the gapi loading
+     **/
     var config = function(conf){
       _handle.resolve(conf);
     }
