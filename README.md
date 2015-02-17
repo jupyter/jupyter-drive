@@ -1,7 +1,7 @@
 # Google Drive support for Jupyter Notebook
 
-This repository contains customs
-[Contents](https://github.com/ipython/ipython/blob/master/IPython/html/static/services/contents.js) class that allows IPython to use
+This repository contains custom
+[`Contents`](https://github.com/ipython/ipython/blob/master/IPython/html/static/services/contents.js) classes that allows IPython to use
 Google Drive for file management.  The code is a organized as a python package
 that contains functions to install a Jupyter Notebook JavaScript extension,
 and activate/deactivate different IPython profiles to be used with Google drive.
