@@ -23,7 +23,8 @@ Drive, run
 python -m jupyterdrive <profile_name>
 ```
 
-Be sure that the profile exist before running the command. You can create a new profile with
+Be sure that the profile exist before running the command.
+You can create a new profile with
 
 ```bash
 ipython profile create <profilename>
@@ -90,3 +91,23 @@ in mind if you want to revoke access at a later point.
 Once you click `Accept` you should be able to start creating new notebooks on
 Google Drive, and open existing ones created by this application, and
 view files/directories in the tree view.
+
+## Advance configuration.
+
+The contens manager can access the `common` section of nbconfig, thus
+you can set config values in `<profile_dir>/nbconfig/common.json`. The default
+value that are use are the following:
+
+```json
+
+{"gdrive":
+    {
+    "METADATA_SCOPE": true,
+    "FILE_SCOPE": true,
+    "CLIENT_ID": "763546234320-uvcktfp0udklafjqv00qjgivpjh0t33p.apps.googleusercontent.com"
+    }
+}
+```
+
+The `APP_ID` section is not yet configurable, but shoudl be configurable in the
+same way at some point in the future.
