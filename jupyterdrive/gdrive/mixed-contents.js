@@ -10,22 +10,7 @@ define(function(require) {
     var dialog = require('base/js/dialog');
     var gapi_utils = require('./gapi_utils');
     var drive_utils = require('./drive_utils');
-    var drive_contents = require('./drive-contents');
-    var local_contents = require('services/contents');
     var notebook_model = require('./notebook_model');
-
-    /** @type {Array} Array of objects with keys 'root' and 'contents' */
-    // TODO: make this configurable
-    var filesystem_scheme = [
-        {
-            'root': '',
-            'contents': local_contents
-        },
-        {
-            'root': 'gdrive',
-            'contents': drive_contents
-        }
-    ];
 
     var Contents = function(options) {
         // Constructor
@@ -40,18 +25,35 @@ define(function(require) {
         //          base_url: string
 
         // Generate a map from root directories, to Contents instances.
-        this.filesystem = {};
-        filesystem_scheme.forEach(function(fs) {
-            this.filesystem[fs['root']] = new fs['contents'].Contents(options);
-        }, this);
+        this.config = options.common_config;
+
+        this.filesystem = this.config.loaded.then($.proxy(function() {
+	        return Promise.all(this.config.data['mixed_contents']['schema'].map(function(fs) {
+                return new Promise(function(resolve, reject) {
+                    require([fs['contents']], function(contents) {
+                        resolve({
+			                'root': fs['root'],
+			                'contents': new contents.Contents(options)
+			            });
+		            });
+	            });
+            })).then(function(filesystem_array) {
+	            var filesystem = {};
+	            filesystem_array.forEach(function(fs) {
+		            filesystem[fs['root']] = fs['contents'];
+	            });
+	            return filesystem;
+	        });
+	    }, this));
     };
 
     /**
      * Generates the object that represents a filesystem
+     * @param {Object} filesystem
      * @return {Object} An object representing a virtual directory.
      */
-    Contents.prototype.virtual_fs_roots = function() {
-        return Object.keys(this.filesystem).map(function(root) {
+    var virtual_fs_roots = function(filesystem) {
+        return Object.keys(filesystem).map(function(root) {
             return {
                 type: 'directory',
                 name: root,
@@ -66,15 +68,16 @@ define(function(require) {
 
     /**
      * Determine which Contents instance to use.
+     * @param {Object} filesystem
      * @param {String} path The path to check.
      * @return {String} The root path for the contents instance.
      */
-    Contents.prototype.get_fs_root = function(path) {
+    var get_fs_root = function(filesystem, path) {
         var components = path.split('/');
         if (components.length == 0) {
             return '';
         }
-        if (this.filesystem[components[0]]) {
+        if (filesystem[components[0]]) {
             return components[0];
         }
         return '';
@@ -168,18 +171,28 @@ define(function(require) {
      * @param {Array} args the arguments to apply
      */
     Contents.prototype.route_function = function(method_name, arg_types, return_type, args) {
-        if (arg_types.length == 0 || arg_types[0] != ArgType.PATH) {
-            // This should never happen since arg_types is hard coded below.
-            throw 'unexpected value of arg_types';
-        }
-        var root = this.get_fs_root(args[0]);
+        return this.filesystem.then(function(filesystem) {
+            if (arg_types.length == 0 || arg_types[0] != ArgType.PATH) {
+                // This should never happen since arg_types is hard coded below.
+                throw 'unexpected value of arg_types';
+            }
+            var root = get_fs_root(filesystem, args[0]);
 
-        for (var i = 0; i < args.length; i++) {
-            args[i] = from_virtual(root, arg_types[i], args[i]);
-        }
-        var contents = this.filesystem[root];
-        return contents[method_name].apply(contents, args).then(
-            $.proxy(to_virtual, this, root, return_type));
+	        if (root === '') {
+	            if (method_name === 'list_contents') {
+		            return {'content': virtual_fs_roots(filesystem)};
+	            } else {
+		            throw 'true root directory only contains mount points.';
+	            }
+	        }
+
+            for (var i = 0; i < args.length; i++) {
+                args[i] = from_virtual(root, arg_types[i], args[i]);
+            }
+            var contents = filesystem[root];
+            return contents[method_name].apply(contents, args).then(
+                $.proxy(to_virtual, this, root, return_type));
+        });
     };
 
     /**
@@ -226,14 +239,7 @@ define(function(require) {
         return this.route_function(
             'list_contents',
             [ArgType.PATH, ArgType.OTHER],
-            ArgType.LIST, arguments)
-        .then(function(response) {
-            if (path === '') {
-                // If this is the root path, add the drive mountpoint directory.
-                response['content'] = response['content'].concat(that.virtual_fs_roots());
-            }
-            return response;
-        });
+            ArgType.LIST, arguments);
     };
 
     Contents.prototype.copy = function(from_file, to_dir) {
