@@ -174,7 +174,7 @@ define(function(require) {
      *     trying to authorize without a popup.
      */
     var authorize = function(opt_withPopup, conf) {
-        var config = $.extend({}, default_config, conf.data['gdrive']);
+        var config = $.extend({}, default_config, (conf.data||{})['gdrive']);
         var scope = [];
         if(config.FILE_SCOPE){
           scope.push(FILES_OAUTH_SCOPE)
