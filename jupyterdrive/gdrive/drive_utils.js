@@ -198,8 +198,66 @@ define(function(require) {
      *     pinned: whether this save should be pinned
      * @return {Promise} A promise resolved with the Google Drive Files
      *     resource for the uploaded file, or rejected with an Error object.
-     */
+     **/
     var upload_to_drive = function(data, metadata, opt_fileId, opt_params) {
+        var params = opt_params || {};
+        var delimiter = '\r\n--' + MULTIPART_BOUNDARY + '\r\n';
+        var close_delim = '\r\n--' + MULTIPART_BOUNDARY + '--';
+        var body = delimiter +
+            'Content-Type: application/json\r\n\r\n';
+        var mime;
+        if (metadata) {
+            mime = metadata.mimeType;
+            body += JSON.stringify(metadata);
+        }
+        body += delimiter;
+        if (mime) {
+            body += 'Content-Type: ' + mime + '\r\n';
+            if (mime === 'application/octet-stream') {
+                body += 'Content-Transfer-Encoding: base64\r\n';
+            }
+        }
+        body +='\r\n' +
+            data +
+            close_delim;
+
+        var path = '/upload/drive/v2/files';
+        var method = 'POST';
+        if (opt_fileId) {
+            path += '/' + opt_fileId;
+            method = 'PUT';
+        }
+
+        var request = gapi.client.request({
+            'path': path,
+            'method': method,
+            'params': {
+                'uploadType': 'multipart',
+                'pinned' : params['pinned']
+            },
+            'headers': {
+                'Content-Type': 'multipart/mixed; boundary="' +
+                MULTIPART_BOUNDARY + '"'
+            },
+            'body': body
+        });
+        return gapi_utils.execute(request);
+    };
+
+
+    /**
+     * Duplicate a file on drive
+     *
+     * @method upload_to_drive
+     * @param {string} data The file contents as a string
+     * @param {Object} metadata File metadata
+     * @param {string=} opt_fileId file Id.  If false, a new file is created.
+     * @param {Object?} opt_params a dictionary containing the following keys
+     *     pinned: whether this save should be pinned
+     * @return {Promise} A promise resolved with the Google Drive Files
+     *     resource for the uploaded file, or rejected with an Error object.
+     **/
+    var duplicate = function(data, metadata, opt_fileId, opt_params) {
         var params = opt_params || {};
         var delimiter = '\r\n--' + MULTIPART_BOUNDARY + '\r\n';
         var close_delim = '\r\n--' + MULTIPART_BOUNDARY + '--';
