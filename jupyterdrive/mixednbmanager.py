@@ -5,10 +5,25 @@
 
 from IPython.html.services.contents.manager import ContentsManager
 from IPython.html.services.contents.filemanager import FileContentsManager
+from IPython.utils.traitlets import List
 from .clientsidenbmanager import ClientSideContentsManager
 
 class MixedContentsManager(ContentsManager):
     DRIVE_PATH_SENTINEL = 'gdrive'
+
+    filesystem_scheme = List([
+            {
+                'root':'root',
+                'contents':"IPython.html.services.contents.filemanager.FileContentsManager"
+            },
+            {
+                'root', 'Local Files',
+                'contents': 'jupyterdrive.clientsidenbmanager.ClientSideContentsManager'
+            }
+        ]
+    help="""
+    List of virtual mount point name and corresponding contents manager
+    """)
 
     def __init__(self, **kwargs):
         self.file_contents_manager = FileContentsManager()
