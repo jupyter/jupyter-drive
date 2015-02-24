@@ -12,6 +12,21 @@ define(function(require) {
     var drive_utils = require('./drive_utils');
     var notebook_model = require('./notebook_model');
 
+    var _default = {"schema":
+      [
+          {
+              "root": "local",
+              "stripjs" : false,
+              "contents": "services/contents"
+          },
+          {
+              "root": "gdrive",
+              "stripjs": true,
+              "contents": "./drive-contents"
+          }
+      ]
+    };
+
     var Contents = function(options) {
         // Constructor
         //
@@ -28,23 +43,23 @@ define(function(require) {
         this.config = options.common_config;
 
         this.filesystem = this.config.loaded.then($.proxy(function() {
-	        return Promise.all(this.config.data['mixed_contents']['schema'].map(function(fs) {
+          return Promise.all((this.config.data['mixed_contents']||_default)['schema'].map(function(fs) {
                 return new Promise(function(resolve, reject) {
                     require([fs['contents']], function(contents) {
-                        resolve({
-			                'root': fs['root'],
-			                'contents': new contents.Contents(options)
-			            });
-		            });
-	            });
+                    resolve({
+                      'root': fs['root'],
+                      'contents': new contents.Contents(options)
+                  });
+                });
+              });
             })).then(function(filesystem_array) {
-	            var filesystem = {};
-	            filesystem_array.forEach(function(fs) {
-		            filesystem[fs['root']] = fs['contents'];
-	            });
-	            return filesystem;
-	        });
-	    }, this));
+              var filesystem = {};
+              filesystem_array.forEach(function(fs) {
+                filesystem[fs['root']] = fs['contents'];
+              });
+              return filesystem;
+          });
+      }, this));
     };
 
     /**
@@ -74,7 +89,7 @@ define(function(require) {
      */
     var get_fs_root = function(filesystem, path) {
         var components = path.split('/');
-        if (components.length == 0) {
+        if (components.length === 0) {
             return '';
         }
         if (filesystem[components[0]]) {
@@ -92,6 +107,10 @@ define(function(require) {
      *
      */
     var from_virtual_path = function(root, path) {
+      //console.warn('from_virtual', root, path);
+        if(root=='local'){
+          return path;
+        }
         return path.substr(root.length);
     };
 
@@ -178,18 +197,19 @@ define(function(require) {
             }
             var root = get_fs_root(filesystem, args[0]);
 
-	        if (root === '') {
-	            if (method_name === 'list_contents') {
-		            return {'content': virtual_fs_roots(filesystem)};
-	            } else {
-		            throw 'true root directory only contains mount points.';
-	            }
-	        }
+            if (root === '') {
+                if (method_name === 'list_contents') {
+                  return {'content': virtual_fs_roots(filesystem)};
+                } else {
+                  throw 'true root directory only contains mount points.';
+                }
+            }
 
             for (var i = 0; i < args.length; i++) {
                 args[i] = from_virtual(root, arg_types[i], args[i]);
             }
             var contents = filesystem[root];
+            //console.warn('will call', method_name, 'with', contents, 'and', args);
             return contents[method_name].apply(contents, args).then(
                 $.proxy(to_virtual, this, root, return_type));
         });
@@ -200,6 +220,7 @@ define(function(require) {
      */
 
     Contents.prototype.get = function (path, type, options) {
+        //console.warn('get', path);
         return this.route_function(
             'get',
             [ArgType.PATH, ArgType.OTHER, ArgType.OTHER],
@@ -235,7 +256,8 @@ define(function(require) {
     };
 
     Contents.prototype.list_contents = function(path, options) {
-        var that = this;
+      //console.warn('list content with path',path)
+      //console.warn('list content |', path,'|');
         return this.route_function(
             'list_contents',
             [ArgType.PATH, ArgType.OTHER],
