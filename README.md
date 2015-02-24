@@ -50,6 +50,78 @@ python -m jupyterdrive default --mixed
 The mixed content manager will show both contents from local hard drive and remote
 google drive as two directory in your dashboard.
 
+#### mixed content configuration.
+
+All the following files should be created automatically
+once you have used the content manager once. You should
+need to modify these file manually to have the contents maager working in most cases.
+
+To modify the configuration of the mixed contents manager you need to update the following files:
+
+`<profile_mixed>/ipython_notebook_config.json` which by default should heve the following structure :
+
+
+```json
+{
+  "nbformat": 1,
+  "NotebookApp": {
+    "contents_manager_class": "jupyterdrive.mixednbmanager.MixedContentsManager",
+    "tornado_settings": {
+      "contents_js_source": "nbextensions/gdrive/mixed-contents"
+    }
+  },
+  "MixedContentsManager":{
+    "filesystem_scheme": [
+        {
+          "root":"local",
+          "contents":"IPython.html.services.contents.filemanager.FileConensManager"
+        },
+        {
+          "root": "gdrive",
+          "contents": "jpyerdrive.clientsidenbmanager.ClientSideContentsManager"
+        }
+      ]
+  }
+
+}
+```
+
+The `root` field of `filesystem_scheme` represent the name that would be use as
+virtual mount points for the contents manager in the dashbord and should be
+consistent with the name given in `nbconfig/common.json` describe below.
+
+the `contents` field contains the fully qualified name of a Contents manager to
+mount on the mountpoint.
+
+The second config file that deals with configuring the frontend is
+`<profile_mixed>/nbconfig/common.json` and by default should be:
+
+```json
+{
+  "mixed_contents": {
+    "schema": [
+      {
+        "stripjs": false,
+        "contents": "services/contents",
+        "root": "local"
+      },
+      {
+        "stripjs": true,
+        "contents": "./drive-contents",
+        "root": "gdrive"
+      }
+    ]
+  }
+}
+```
+
+As stated previously the `root` value should match python side config file,
+`contents` represent the client-side content manager that need to be use.
+`stripjs` is a boolean value that indicate weather the name of the mount point
+should be stripped from the various path on the javascript side before passing
+it to the differents subcontent manager.
+
+
 
 ## Other options
 
@@ -94,7 +166,7 @@ view files/directories in the tree view.
 
 ## Advance configuration.
 
-The contens manager can access the `common` section of nbconfig, thus
+The contents manager can access the `common` section of nbconfig, thus
 you can set config values in `<profile_dir>/nbconfig/common.json`. The default
 value that are use are the following:
 
