@@ -4,13 +4,10 @@
 # Distributed under the terms of the Modified BSD License.
 
 from IPython.html.services.contents.manager import ContentsManager
-from IPython.html.services.contents.filemanager import FileContentsManager
 from IPython.utils.traitlets import List
-from .clientsidenbmanager import ClientSideContentsManager
 from IPython.utils.importstring import import_item
 
 class MixedContentsManager(ContentsManager):
-    DRIVE_PATH_SENTINEL = 'gdrive'
 
     filesystem_scheme = List([
             {
@@ -24,25 +21,22 @@ class MixedContentsManager(ContentsManager):
         ],
     help="""
     List of virtual mount point name and corresponding contents manager
-    """)
+    """, config=True)
 
     def __init__(self, **kwargs):
-        kwargs.update({'parent':self})
+
         super(MixedContentsManager, self).__init__(**kwargs)
         self.managers = {}
+
         ## check consistency of scheme.
         if not len(set(map(lambda x:x['root'], self.filesystem_scheme))) == len(self.filesystem_scheme):
             raise ValueError('Scheme should not mount two contents manager on the same mountpoint')
+
+        kwargs.update({'parent':self})
         for scheme in self.filesystem_scheme:
             manager_class = import_item(scheme['contents'])
             self.managers[scheme['root']] = manager_class(**kwargs)
 
-        self.file_contents_manager = FileContentsManager()
-        self.client_side_contents_manager = ClientSideContentsManager()
-
-    def is_drive_path(self, path):
-        components = path.split('/');
-        return components and components[0] == self.DRIVE_PATH_SENTINEL
 
     def path_dispatch1(method):
         def _wrapper_method(self, path, *args, **kwargs):
@@ -52,10 +46,8 @@ class MixedContentsManager(ContentsManager):
             if man is not None:
                 meth = getattr(man, method.__name__)
                 sub = meth('/'.join(_path), *args, **kwargs)
-                print('path dispatching '+method.__name__+' on '+sentinel, sub)
                 return sub
             else :
-                print('not path dispatching <'+method.__name__+'> on <'+path+'>, know only about '+str(self.managers.keys()))
                 return method(self, path, *args, **kwargs)
         return _wrapper_method
 
@@ -67,11 +59,22 @@ class MixedContentsManager(ContentsManager):
             if man is not None:
                 meth = getattr(man, method.__name__)
                 sub = meth(other, '/'.join(_path), *args, **kwargs)
-                print('path dispatching '+method.__name__+' on '+sentinel, sub)
                 return sub
             else :
-                print('not path dispatching <'+method.__name__+'> on <'+path+'>, know only about '+str(self.managers.keys()))
                 return method(self, other, path, *args, **kwargs)
+        return _wrapper_method
+
+    def path_dispatch_kwarg(method):
+        def _wrapper_method(self, path=''):
+            path = path.strip('/')
+            (sentinel, *_path) = path.split('/')
+            man = self.managers.get(sentinel, None)
+            if man is not None:
+                meth = getattr(man, method.__name__)
+                sub = meth(path='/'.join(_path))
+                return sub
+            else :
+                return method(self, path=path)
         return _wrapper_method
 
     # ContentsManager API part 1: methods that must be
@@ -80,7 +83,6 @@ class MixedContentsManager(ContentsManager):
     @path_dispatch1
     def dir_exists(self, path):
         ## root exists
-        print('dir_exist', path)
         if path is '':
             return True
         if path in self.managers.keys():
@@ -93,48 +95,45 @@ class MixedContentsManager(ContentsManager):
             return False;
         raise NotImplementedError('....'+path)
 
-
+    @path_dispatch_kwarg
     def file_exists(self, path=''):
-        if self.is_drive_path(path):
-            return self.client_side_contents_manager.file_exists(path)
-        return self.file_contents_manager.file_exists(path)
+        raise NotImplementedError('NotImplementedError')
 
     @path_dispatch1
     def exists(self, path):
-        return self.file_contents_manager.exists(path)
+        raise NotImplementedError('NotImplementedError')
 
     @path_dispatch1
     def get(self, path, **kwargs):
-        pass
+        raise NotImplementedError('NotImplementedError')
 
     @path_dispatch2
     def save(self, model, path):
-        pass
-        #return self.file_contents_manager.save(model, path)
+        raise NotImplementedError('NotImplementedError')
 
     @path_dispatch2
     def update(self, model, path):
-        return self.file_contents_manager.update(model, path)
+        raise NotImplementedError('NotImplementedError')
 
     @path_dispatch1
     def delete(self, path):
-        return self.file_contents_manager.delete(path)
+        raise NotImplementedError('NotImplementedError')
 
     @path_dispatch1
     def create_checkpoint(self, path):
-        return self.file_contents_manager.create_checkpoint(path)
+        raise NotImplementedError('NotImplementedError')
 
     @path_dispatch1
     def list_checkpoints(self, path):
-        return self.file_contents_manager.list_checkpoints(path)
+        raise NotImplementedError('NotImplementedError')
 
     @path_dispatch2
     def restore_checkpoint(self, checkpoint_id, path):
-        return self.file_contents_manager.restore_checkpoint(checkpoint_id, path)
+        raise NotImplementedError('NotImplementedError')
 
     @path_dispatch2
     def delete_checkpoint(self, checkpoint_id, path):
-        return self.file_contents_manager.delete_checkpoint(checkpoint_id, path)
+        raise NotImplementedError('NotImplementedError')
 
     # ContentsManager API part 2: methods that have useable default
     # implementations, but can be overridden in subclasses.

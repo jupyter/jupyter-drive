@@ -7,10 +7,6 @@ define(function(require) {
     var IPython = require('base/js/namespace');
     var $ = require('jquery');
     var utils = require('base/js/utils');
-    var dialog = require('base/js/dialog');
-    var gapi_utils = require('./gapi_utils');
-    var drive_utils = require('./drive_utils');
-    var notebook_model = require('./notebook_model');
 
     var _default = {"schema":
       [
@@ -43,7 +39,13 @@ define(function(require) {
         this.config = options.common_config;
 
         this.filesystem = this.config.loaded.then($.proxy(function() {
-          return Promise.all((this.config.data['mixed_contents']||_default)['schema'].map(function(fs) {
+          var local_config = this.config.data['mixed_contents'];
+          if (!local_config){
+            this.config.update({'mixed_contents': _default});
+          }
+          var schema = (local_config||_default)['schema'];
+          return Promise.all(
+                schema.map(function(fs) {
                 return new Promise(function(resolve, reject) {
                     require([fs['contents']], function(contents) {
                     resolve({
@@ -106,9 +108,9 @@ define(function(require) {
      * @return {String} the converted path
      *
      */
-    var from_virtual_path = function(root, path) {
-      //console.warn('from_virtual', root, path);
-        if(root=='local'){
+    var from_virtual_path = function(root, path, config) {
+        var match_conf = config.filter(function(x){return x.root == root;});
+        if( match_conf[0].stripjs !== true){
           return path;
         }
         return path.substr(root.length);
@@ -170,9 +172,9 @@ define(function(require) {
         }
     };
 
-    var from_virtual = function(root, type, object) {
+    var from_virtual = function(root, type, object, config) {
         if (type === ArgType.PATH) {
-            return from_virtual_path(root, object);
+            return from_virtual_path(root, object, config);
         } else if (type === ArgType.FILE) {
             throw "from_virtual_file not implemented";
         } else if (type === ArgType.LIST) {
@@ -190,6 +192,7 @@ define(function(require) {
      * @param {Array} args the arguments to apply
      */
     Contents.prototype.route_function = function(method_name, arg_types, return_type, args) {
+        var that = this;
         return this.filesystem.then(function(filesystem) {
             if (arg_types.length == 0 || arg_types[0] != ArgType.PATH) {
                 // This should never happen since arg_types is hard coded below.
@@ -206,10 +209,9 @@ define(function(require) {
             }
 
             for (var i = 0; i < args.length; i++) {
-                args[i] = from_virtual(root, arg_types[i], args[i]);
+                args[i] = from_virtual(root, arg_types[i], args[i], that.config.data['mixed_contents']['schema']);
             }
             var contents = filesystem[root];
-            //console.warn('will call', method_name, 'with', contents, 'and', args);
             return contents[method_name].apply(contents, args).then(
                 $.proxy(to_virtual, this, root, return_type));
         });
@@ -220,7 +222,6 @@ define(function(require) {
      */
 
     Contents.prototype.get = function (path, type, options) {
-        //console.warn('get', path);
         return this.route_function(
             'get',
             [ArgType.PATH, ArgType.OTHER, ArgType.OTHER],
@@ -256,8 +257,6 @@ define(function(require) {
     };
 
     Contents.prototype.list_contents = function(path, options) {
-      //console.warn('list content with path',path)
-      //console.warn('list content |', path,'|');
         return this.route_function(
             'list_contents',
             [ArgType.PATH, ArgType.OTHER],
