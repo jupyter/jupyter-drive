@@ -41,7 +41,8 @@ class MixedContentsManager(ContentsManager):
     def path_dispatch1(method):
         def _wrapper_method(self, path, *args, **kwargs):
             path = path.strip('/')
-            (sentinel, *_path) = path.split('/')
+            _path = path.split('/')
+            sentinel = _path.pop(0)
             man = self.managers.get(sentinel, None)
             if man is not None:
                 meth = getattr(man, method.__name__)
