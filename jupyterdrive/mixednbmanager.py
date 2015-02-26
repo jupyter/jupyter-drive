@@ -55,7 +55,8 @@ class MixedContentsManager(ContentsManager):
     def path_dispatch2(method):
         def _wrapper_method(self, other, path, *args, **kwargs):
             path = path.strip('/')
-            (sentinel, *_path) = path.split('/')
+            _path = path.split('/')
+            sentinel = _path.pop(0)
             man = self.managers.get(sentinel, None)
             if man is not None:
                 meth = getattr(man, method.__name__)
@@ -68,7 +69,8 @@ class MixedContentsManager(ContentsManager):
     def path_dispatch_kwarg(method):
         def _wrapper_method(self, path=''):
             path = path.strip('/')
-            (sentinel, *_path) = path.split('/')
+            _path = path.split('/')
+            sentinel = _path.pop(0)
             man = self.managers.get(sentinel, None)
             if man is not None:
                 meth = getattr(man, method.__name__)
@@ -84,7 +86,7 @@ class MixedContentsManager(ContentsManager):
     @path_dispatch1
     def dir_exists(self, path):
         ## root exists
-        if path is '':
+        if len(path) == 0:
             return True
         if path in self.managers.keys():
             return True
@@ -92,20 +94,26 @@ class MixedContentsManager(ContentsManager):
 
     @path_dispatch1
     def is_hidden(self, path):
-        if (path is '') or path in self.managers.keys():
+        if (len(path) == 0) or path in self.managers.keys():
             return False;
         raise NotImplementedError('....'+path)
 
     @path_dispatch_kwarg
     def file_exists(self, path=''):
+        if len(path) == 0:
+            return False
         raise NotImplementedError('NotImplementedError')
 
     @path_dispatch1
     def exists(self, path):
+        if len(path) == 0:
+            return True
         raise NotImplementedError('NotImplementedError')
 
     @path_dispatch1
     def get(self, path, **kwargs):
+        if len(path) == 0:
+            return [ {'type':'directory'}]
         raise NotImplementedError('NotImplementedError')
 
     @path_dispatch2
