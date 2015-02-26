@@ -7,10 +7,21 @@ define(function(require) {
     var IPython = require('base/js/namespace');
     var $ = require('jquery');
     var utils = require('base/js/utils');
-    var dialog = require('base/js/dialog');
-    var gapi_utils = require('./gapi_utils');
-    var drive_utils = require('./drive_utils');
-    var notebook_model = require('./notebook_model');
+
+    var _default = {"schema":
+      [
+          {
+              "root": "local",
+              "stripjs" : false,
+              "contents": "services/contents"
+          },
+          {
+              "root": "gdrive",
+              "stripjs": true,
+              "contents": "./drive-contents"
+          }
+      ]
+    };
 
     var Contents = function(options) {
         // Constructor
@@ -28,23 +39,29 @@ define(function(require) {
         this.config = options.common_config;
 
         this.filesystem = this.config.loaded.then($.proxy(function() {
-	        return Promise.all(this.config.data['mixed_contents']['schema'].map(function(fs) {
+          var local_config = this.config.data['mixed_contents'];
+          if (!local_config){
+            this.config.update({'mixed_contents': _default});
+          }
+          var schema = (local_config||_default)['schema'];
+          return Promise.all(
+                schema.map(function(fs) {
                 return new Promise(function(resolve, reject) {
                     require([fs['contents']], function(contents) {
-                        resolve({
-			                'root': fs['root'],
-			                'contents': new contents.Contents(options)
-			            });
-		            });
-	            });
+                    resolve({
+                      'root': fs['root'],
+                      'contents': new contents.Contents(options)
+                  });
+                });
+              });
             })).then(function(filesystem_array) {
-	            var filesystem = {};
-	            filesystem_array.forEach(function(fs) {
-		            filesystem[fs['root']] = fs['contents'];
-	            });
-	            return filesystem;
-	        });
-	    }, this));
+              var filesystem = {};
+              filesystem_array.forEach(function(fs) {
+                filesystem[fs['root']] = fs['contents'];
+              });
+              return filesystem;
+          });
+      }, this));
     };
 
     /**
@@ -74,7 +91,7 @@ define(function(require) {
      */
     var get_fs_root = function(filesystem, path) {
         var components = path.split('/');
-        if (components.length == 0) {
+        if (components.length === 0) {
             return '';
         }
         if (filesystem[components[0]]) {
@@ -91,7 +108,11 @@ define(function(require) {
      * @return {String} the converted path
      *
      */
-    var from_virtual_path = function(root, path) {
+    var from_virtual_path = function(root, path, config) {
+        var match_conf = config.filter(function(x){return x.root == root;});
+        if( match_conf[0].stripjs !== true){
+          return path;
+        }
         return path.substr(root.length);
     };
 
@@ -151,9 +172,9 @@ define(function(require) {
         }
     };
 
-    var from_virtual = function(root, type, object) {
+    var from_virtual = function(root, type, object, config) {
         if (type === ArgType.PATH) {
-            return from_virtual_path(root, object);
+            return from_virtual_path(root, object, config);
         } else if (type === ArgType.FILE) {
             throw "from_virtual_file not implemented";
         } else if (type === ArgType.LIST) {
@@ -171,6 +192,7 @@ define(function(require) {
      * @param {Array} args the arguments to apply
      */
     Contents.prototype.route_function = function(method_name, arg_types, return_type, args) {
+        var that = this;
         return this.filesystem.then(function(filesystem) {
             if (arg_types.length == 0 || arg_types[0] != ArgType.PATH) {
                 // This should never happen since arg_types is hard coded below.
@@ -178,16 +200,16 @@ define(function(require) {
             }
             var root = get_fs_root(filesystem, args[0]);
 
-	        if (root === '') {
-	            if (method_name === 'list_contents') {
-		            return {'content': virtual_fs_roots(filesystem)};
-	            } else {
-		            throw 'true root directory only contains mount points.';
-	            }
-	        }
+            if (root === '') {
+                if (method_name === 'list_contents') {
+                  return {'content': virtual_fs_roots(filesystem)};
+                } else {
+                  throw 'true root directory only contains mount points.';
+                }
+            }
 
             for (var i = 0; i < args.length; i++) {
-                args[i] = from_virtual(root, arg_types[i], args[i]);
+                args[i] = from_virtual(root, arg_types[i], args[i], that.config.data['mixed_contents']['schema']);
             }
             var contents = filesystem[root];
             return contents[method_name].apply(contents, args).then(
@@ -235,7 +257,6 @@ define(function(require) {
     };
 
     Contents.prototype.list_contents = function(path, options) {
-        var that = this;
         return this.route_function(
             'list_contents',
             [ArgType.PATH, ArgType.OTHER],
