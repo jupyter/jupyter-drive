@@ -223,14 +223,20 @@ define(function(require) {
             $.proxy(drive_utils.get_resource_for_path, this, path, drive_utils.FileType.FILE));
         var contents_prm = metadata_prm.then(function(resource) {
             that.observe_file_resource(resource);
-            return gapi_utils.download(resource['downloadUrl'])
-            .catch(function(error){
-                if (error.xhr.status != 404) {
-                    return error;  // Should this be Promise.reject(error)???
-                }
+            // If downloadUrl field is missing, this means that we do not have
+            // access to the file using drive.file scope.  Therefore we prompt
+            // the user to open a FilePicker window that allows them to indicate
+            // to Google Drive that they intend to open that file with this
+            // app.
+            if (resource['downloadUrl']) {
+                return gapi_utils.download(resource['downloadUrl']);
+            } else {
+                // TODO: implement exponential backoff as file is not
+                // available immediately after user selects in.  Up to 3
+                // seconds latency is typical.
                 return picker_utils.pick_file(resource.parents[0]['id'], resource['title'])
                 .then(function() { return gapi_utils.download(resource['downloadUrl']); });
-            });
+            }
         })
 
         return Promise.all([metadata_prm, contents_prm]).then(function(values) {
