@@ -6,10 +6,10 @@ Google Drive for file management.  The code is a organized as a python package
 that contains functions to install a Jupyter Notebook JavaScript extension,
 and activate/deactivate different IPython profiles to be used with Google drive.
 
-To install this package, clone this repository locally and run
+To install this package, run
 
 ```bash
-pip install -e .
+pip install git+git://github.com/jupyter/jupyter-drive.git#egg=jupyter-drive
 ```
 
 This will install the package in development mode with pip, which means that any
