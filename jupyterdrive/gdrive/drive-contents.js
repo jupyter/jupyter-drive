@@ -222,7 +222,7 @@ define(function(require) {
             $.proxy(drive_utils.get_resource_for_path, this, path, drive_utils.FileType.FILE));
         var contents_prm = metadata_prm.then(function(resource) {
             that.observe_file_resource(resource);
-            return drive_utils.get_contents(resource, false, 0);
+            return drive_utils.get_contents(resource, false);
         });
 
         return Promise.all([metadata_prm, contents_prm]).then(function(values) {
