@@ -8,6 +8,7 @@ define(function(require) {
     var jquery =     require('jquery');
     var $ = jquery;
     var gapi_utils = require('./gapi_utils');
+    var picker_utils = require('./picker_utils');
 
     var FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
 
@@ -244,6 +245,52 @@ define(function(require) {
         return gapi_utils.execute(request);
     };
 
+    var GET_CONTENTS_INITIAL_DELAY = 200;  // 200 ms
+    var GET_CONTENTS_MAX_TRIES = 5;
+    var GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR = 2.0;
+
+    /**
+     * Attempt to get the contents of a file with the given id.  This may
+     * involve requesting the user to open the file in a FilePicker.
+     * @param {Object} resource The files resource of the file.
+     * @param {Boolean} already_picked Set to true if this file has already
+     *     been selected by the FilePicker
+     * @param {Number?} opt_num_tries The number tries left to open this file.
+     *     Should be set when already_picked is true.
+     * @return {Promise} A promise fullfilled by file contents.
+     */
+    var get_contents = function(resource, already_picked, opt_num_tries) {
+        if (resource['downloadUrl']) {
+            return gapi_utils.download(resource['downloadUrl']);
+        } else if (already_picked) {
+            if (opt_num_tries == 0) {
+              return Promise.reject(new Error('Max retries of file load reached'));
+            }
+            var request = gapi.client.drive.files.get({ 'fileId': resource['id'] });
+            var reply = gapi_utils.execute(request);
+            var delay = GET_CONTENTS_INITIAL_DELAY *
+                Math.pow(GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR, GET_CONTENTS_MAX_TRIES - opt_num_tries);
+            var delayed_reply = new Promise(function(resolve, reject) {
+                window.setTimeout(function() {
+                    resolve(reply);
+                }, delay);
+            });
+            return delayed_reply.then(function(new_resource) {
+                return get_contents(new_resource, true, opt_num_tries - 1);
+            });
+        } else {
+            // If downloadUrl field is missing, this means that we do not have
+            // access to the file using drive.file scope.  Therefore we prompt
+            // the user to open a FilePicker window that allows them to indicate
+            // to Google Drive that they intend to open that file with this
+            // app.
+	    return picker_utils.pick_file(resource.parents[0]['id'], resource['title'])
+                .then(function() {
+                  return get_contents(resource, true, GET_CONTENTS_MAX_TRIES);
+                });
+        }
+    };
+
     /**
      * Fetch user avatar url and put it in the header
      * optionally take a selector into which to insert the img tag
@@ -277,7 +324,8 @@ define(function(require) {
         get_resource_for_relative_path : get_resource_for_relative_path,
         get_resource_for_path : get_resource_for_path,
         get_new_filename : get_new_filename,
-        upload_to_drive : upload_to_drive, 
+        upload_to_drive : upload_to_drive,
+        get_contents : get_contents,
         set_user_info: set_user_info
     }
 
