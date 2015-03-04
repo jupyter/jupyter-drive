@@ -20,7 +20,7 @@ class ClientSideContentsManager(ContentsManager):
     def is_hidden(self, path):
         return False
 
-    def file_exists(self, name, path=''):
+    def file_exists(self, path=''):
         return True
 
     def get(self, path, **kwargs):
