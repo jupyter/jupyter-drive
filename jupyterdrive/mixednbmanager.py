@@ -74,7 +74,7 @@ class MixedContentsManager(ContentsManager):
             man = self.managers.get(sentinel, None)
             if man is not None:
                 meth = getattr(man, method.__name__)
-                sub = meth(self, path='/'.join(_path))
+                sub = meth(path='/'.join(_path))
                 return sub
             else :
                 return method(self, path=path)
