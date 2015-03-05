@@ -228,7 +228,8 @@ define(function(require) {
         return Promise.all([metadata_prm, contents_prm]).then(function(values) {
             var metadata = values[0];
             var contents = values[1];
-            var model = files_resource_to_contents_model(path, metadata, contents);
+            var model = files_resource_to_contents_model(path, metadata, contents.text);
+            model.event_string = contents.string;
             return model;
         });
     };

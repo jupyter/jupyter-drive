@@ -11,6 +11,7 @@ define(function(require) {
     var picker_utils = require('./picker_utils');
 
     var FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
+    var REALTIME_MIMETYPE = 'application/vnd.google-apps.drive-sdk'
 
     var NOTEBOOK_MIMETYPE = 'application/ipynb';
 
@@ -261,7 +262,31 @@ define(function(require) {
      */
     var get_contents = function(resource, already_picked, opt_num_tries) {
         if (resource['downloadUrl']) {
-            return gapi_utils.download(resource['downloadUrl']);
+            var _h = {}
+
+            var rtm = new Promise(function(resolve){
+                _h.resolve = resolve;
+            })
+            gapi.drive.realtime.load(resource['id'], function(doc){
+                console.log('gotRT Root', doc.getModel().getRoot())
+
+
+                var model = doc.getModel();
+                var root = model.getRoot();
+                var strmo = root.get('text')
+                _h.resolve({
+                    text: strmo.toString(),
+                    string: strmo
+                })
+                window.doc = doc; 
+                window.mode = model;
+                window.root = root; 
+            })
+            return rtm;
+            return  gapi_utils.download(resource['downloadUrl']).then(function(res){
+                console.warn(res);
+                return res
+            });
         } else if (already_picked) {
             if (opt_num_tries == 0) {
               return Promise.reject(new Error('Max retries of file load reached'));

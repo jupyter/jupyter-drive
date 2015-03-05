@@ -1,4 +1,4 @@
-// Copyright (c) IPython Development Team.
+
 // Distributed under the terms of the Modified BSD License.
 
 define(function(require) {
@@ -175,6 +175,7 @@ define(function(require) {
      */
     var authorize = function(opt_withPopup, conf) {
         var config = $.extend({}, default_config, (conf.data||{})['gdrive']);
+        console.log(config, conf);
         var scope = [];
         if(config.FILE_SCOPE){
           scope.push(FILES_OAUTH_SCOPE)
