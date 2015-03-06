@@ -23,6 +23,6 @@ class ClientSideContentsManager(ContentsManager):
     def file_exists(self, path=''):
         return True
 
-    def get(self, path, **kwargs):
+    def get(self, path, content=True, type=None, format=None):
         ## if ends with ipynb
         return {'type':'notebook'}
