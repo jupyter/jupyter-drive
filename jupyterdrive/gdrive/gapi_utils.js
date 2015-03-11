@@ -223,7 +223,7 @@ define(function(require) {
                     error.name = 'GapiError';
                     return Promise.reject(error);
                 }
-                return authorize(true, config);
+                return authorize(true, {'data': {'gdrive': config}});
             });
         }
     };
