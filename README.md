@@ -93,12 +93,10 @@ consistent with the name given in `nbconfig/common.json` describe below.
 the `contents` field contains the fully qualified name of a Contents manager to
 mount on the mountpoint.
 
-The second config file that deals with configuring the frontend is
-`<profile_mixed>/nbconfig/common.json` and by default should be:
+The second config file that deals with configuring the frontend should be:
 
 ```json
-{
-  "mixed_contents": {
+  {
     "schema": [
       {
         "stripjs": false,
@@ -112,8 +110,13 @@ The second config file that deals with configuring the frontend is
       }
     ]
   }
-}
 ```
+
+To modify it, in a notebook access the config object, and extract defautl value: 
+`>>> data = IPython.notebook.contents.config.data` . Change one of the values, 
+for example : `>>> data.mixed_contents.schema[0].root = 'new_root'`. Update teh config with the new value :
+`>>> IPython.notebook.contents.config.update(data)`.
+
 
 As stated previously the `root` value should match python side config file,
 `contents` represent the client-side content manager that need to be use.
