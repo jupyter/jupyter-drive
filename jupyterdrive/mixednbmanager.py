@@ -7,6 +7,20 @@ from IPython.html.services.contents.manager import ContentsManager
 from IPython.utils.traitlets import List
 from IPython.utils.importstring import import_item
 
+def _split_path(path):
+    """split a path return by the api
+
+    return
+        - the sentinel:
+        - the rest of the path as a list.
+        - the original path stripped of / for normalisation.
+    """
+    path = path.strip('/')
+    list_path = path.split('/')
+    sentinel = list_path.pop(0)
+    return sentinel, list_path, path
+
+
 class MixedContentsManager(ContentsManager):
 
     filesystem_scheme = List([
@@ -40,9 +54,7 @@ class MixedContentsManager(ContentsManager):
 
     def path_dispatch1(method):
         def _wrapper_method(self, path, *args, **kwargs):
-            path = path.strip('/')
-            _path = path.split('/')
-            sentinel = _path.pop(0)
+            sentinel, _path, path =  _split_path(path);
             man = self.managers.get(sentinel, None)
             if man is not None:
                 meth = getattr(man, method.__name__)
@@ -54,9 +66,7 @@ class MixedContentsManager(ContentsManager):
 
     def path_dispatch2(method):
         def _wrapper_method(self, other, path, *args, **kwargs):
-            path = path.strip('/')
-            _path = path.split('/')
-            sentinel = _path.pop(0)
+            sentinel, _path, path =  _split_path(path);
             man = self.managers.get(sentinel, None)
             if man is not None:
                 meth = getattr(man, method.__name__)
@@ -68,9 +78,7 @@ class MixedContentsManager(ContentsManager):
 
     def path_dispatch_kwarg(method):
         def _wrapper_method(self, path=''):
-            path = path.strip('/')
-            _path = path.split('/')
-            sentinel = _path.pop(0)
+            sentinel, _path, path =  _split_path(path);
             man = self.managers.get(sentinel, None)
             if man is not None:
                 meth = getattr(man, method.__name__)
@@ -120,9 +128,22 @@ class MixedContentsManager(ContentsManager):
     def save(self, model, path):
         raise NotImplementedError('NotImplementedError')
 
-    @path_dispatch2
     def update(self, model, path):
-        raise NotImplementedError('NotImplementedError')
+        sentinel, listpath, path = _split_path(path)
+        m_sentinel, m_listpath, orig_path =  _split_path(model['path'])
+        if sentinel != m_sentinel:
+            raise ValueError('Does not know how to move model across mountpoints')
+
+        model['path'] = '/'.join(m_listpath)
+
+        man = self.managers.get(sentinel, None)
+        if man is not None:
+            meth = getattr(man, 'update')
+            sub = meth(model, '/'.join(listpath))
+            return sub
+        else :
+            return self.method(model, path)
+
 
     @path_dispatch1
     def delete(self, path):
@@ -148,3 +169,41 @@ class MixedContentsManager(ContentsManager):
     # implementations, but can be overridden in subclasses.
 
     # TODO (route optional methods too)
+
+    ## Path dispatch on args 2 and 3 for rename.
+
+    def path_dispatch_rename(rename_like_method):
+        """
+        decorator for rename-like function, that need dispatch on 2 arguments
+        """
+
+        def _wrapper_method(self, old_path, new_path):
+            old_path, _old_path, old_sentinel =  _split_path(path);
+            new_path, _new_path, new_sentinel =  _split_path(path);
+
+            if old_sentinel != new_sentinel:
+                raise ValueError('Does not know how to move things across contents manager mountpoints')
+            else:
+                sentinel = new_sentinel
+
+
+            man = self.managers.get(sentinel, None)
+            if man is not None:
+                rename_meth = getattr(man, rename_like_method.__name__)
+                sub = rename_meth('/'.join(_old_path), '/'.join(_new_path))
+                return sub
+            else :
+                return rename_method(self, old_path, new_path)
+        return _wrapper_method
+
+    @path_dispatch_rename
+    def rename_file(self, old_path, new_path):
+        """Rename a file."""
+        raise NotImplementedError('must be implemented in a subclass')
+
+
+    @path_dispatch_rename
+    def rename(self, old_path, new_path):
+        """Rename a file."""
+        raise NotImplementedError('must be implemented in a subclass')
+
