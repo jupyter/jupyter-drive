@@ -268,12 +268,14 @@ define(function(require) {
                 _h.resolve = resolve;
             })
             gapi.drive.realtime.load(resource['id'], function(doc){
-                console.log('gotRT Root', doc.getModel().getRoot())
-
-
                 var model = doc.getModel();
                 var root = model.getRoot();
                 var strmo = root.get('text')
+                if (strmo === null) {
+                    console.log('string model is null, setting the model')
+                    strmo = model.createString();
+                    root.set('text', strmo);
+                }
                 _h.resolve({
                     text: strmo.toString(),
                     string: strmo
@@ -284,7 +286,6 @@ define(function(require) {
             })
             return rtm;
             return  gapi_utils.download(resource['downloadUrl']).then(function(res){
-                console.warn(res);
                 return res
             });
         } else if (already_picked) {
@@ -333,7 +334,8 @@ define(function(require) {
                                    .css('border-radius','32px')
                                    .css('width','32px')
                                    .css('margin-top','-1px')
-                                   .css('margin-bottom','-1px');
+                                   .css('margin-bottom','-1px')
+                                   .css('margin-left','10px');
             image.attr('title', 'Logged in to Google Drive as '+user.displayName);
             $('#header-container').prepend($('<span/>').append(image));
         })
