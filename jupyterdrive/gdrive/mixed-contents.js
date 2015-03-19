@@ -188,7 +188,7 @@ define(function(require) {
      * Route a function to the appropriate content manager class
      * @param {string} method_name Name of the method being called
      * @param {Array} arg_types Types of the arguments to the function
-     * @param {Array} arg_types Type of the return value of the function
+     * @param {Array} return_types Type of the return value of the function
      * @param {Array} args the arguments to apply
      */
     Contents.prototype.route_function = function(method_name, arg_types, return_type, args) {
@@ -239,7 +239,7 @@ define(function(require) {
         return this.route_function(
             'delete',
             [ArgType.PATH],
-            ArgType.FILE, arguments);
+            ArgType.OTHER, arguments);
     };
 
     Contents.prototype.rename = function(path, new_path) {
