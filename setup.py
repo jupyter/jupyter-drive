@@ -14,7 +14,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/development.html#single-sourcing-the-version
-    version='1.0.0',
+    version='1.1.0',
 
     description='Integration of IPython/Jupyter with Google drive',
     long_description='',
