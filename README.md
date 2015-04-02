@@ -147,13 +147,11 @@ in `.py` files, though you can still use non conflicting options.
 
 # First launch
 
-Launch with:
+Launch ipython with ths profile in which you activated jupyter-drive:
 
 ```bash
 ipython notebook --profile <profilename>
 ```
-
-You might need to add `sudo`, if you get permission errors.
 
 On first launch, the application will ask you for the authorization to access
 your files on Google Drive.  It only asks for permission to create new files or
