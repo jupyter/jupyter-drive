@@ -1,22 +1,21 @@
 from __future__ import print_function
-import IPython
-import IPython.html.nbextensions as nbe
-from IPython.utils.path import locate_profile
-from IPython.utils.py3compat import cast_unicode_py2
-
 
 import sys
 import os
-import os.path
 import json
 import io
 
-from IPython.config import Config, JSONFileConfigLoader, ConfigFileNotFound
+from IPython.utils.py3compat import cast_unicode_py2
+import jupyter_notebook.nbextensions as nbe
+from jupyter_core.paths import jupyter_config_dir
+from traitlets.config import Config, JSONFileConfigLoader, ConfigFileNotFound
 
 
-def install(profile='default', symlink=True, mixed=False, user=False, prefix=None,
+def install(symlink=True, mixed=False, user=False, prefix=None,
             verbose=False, path=None):
     dname = os.path.dirname(__file__)
+    pdir = jupyter_config_dir()
+
     # miht want to check if already installed and overwrite if exist
     if symlink and verbose:
         print('Will try symlink nbextension')
@@ -29,13 +28,8 @@ def install(profile='default', symlink=True, mixed=False, user=False, prefix=Non
                                    user=user,
                                  prefix=prefix,
                                  nbextensions_dir=path)
-    activate(profile, mixed=mixed)
 
-def activate(profile,mixed=False):
-    dname = os.path.dirname(__file__)
-    pdir = locate_profile(profile)
-
-    jc = JSONFileConfigLoader('ipython_notebook_config.json',pdir)
+    jc = JSONFileConfigLoader('jupyter_notebook_config.json',pdir)
 
 
     try:
@@ -55,7 +49,8 @@ def activate(profile,mixed=False):
     print('Activating Google Drive integration for profile "%s"' % profile)
     config['nbformat'] = 1
 
-    with io.open(os.path.join(pdir,'ipython_notebook_config.json'),'w', encoding='utf-8') as f:
+    print('Activating Google Drive integration')
+    with io.open(os.path.join(pdir,'jupyter_notebook_config.json'),'w', encoding='utf-8') as f:
         f.write(cast_unicode_py2(json.dumps(config, indent=2)))
 
 def deactivate(profile):
@@ -70,7 +65,6 @@ def main(argv=None):
     prog = '{} -m jupyterdrive'.format(os.path.basename(sys.executable))
     parser = argparse.ArgumentParser(prog=prog,
                     description='Install Google Drive integration for Jupyter.')
-    parser.add_argument('profile', nargs='?', default=None, metavar=('<profile_name>'))
     parser.add_argument("-m", "--mixed", help="Installed the mixed content manager",
                     action="store_true")
     parser.add_argument("-S", "--no-symlink", help="do not symlink at install time",
@@ -85,13 +79,9 @@ def main(argv=None):
                     action='store_true')
     args = parser.parse_args(argv)
 
-    if not args.profile:
-        parser.print_help()
-        sys.exit(0)
     install(   path=args.path,
               mixed=args.mixed,
-             prefix=args.prefix,
-            profile=args.profile,
+            prefix=args.prefix,
             symlink=args.symlink,
             verbose=args.verbose
             )

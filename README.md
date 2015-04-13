@@ -9,28 +9,20 @@ and activate/deactivate different IPython profiles to be used with Google drive.
 To install this package, run
 
 ```bash
-pip install git+git://github.com/jupyter/jupyter-drive.git#egg=jupyter-drive
+git clone git+git://github.com/jupyter/jupyter-drive.git
+pip install -e jupyter-drive
 ```
 
 This will install the package in development mode with pip, which means that any
 change you make to the repository will be reflected into the importable version
 immediately.
 
-To install the notebook extension and activate your profile with Google
+To install the notebook extension and activate your configuration with Google
 Drive, run
 
 ```bash
-python -m jupyterdrive <profile_name>
+python -m jupyterdrive
 ```
-
-Be sure that the profile exist before running the command.
-You can create a new profile with
-
-```bash
-ipython profile create <profilename>
-```
-
-Please refer to IPython documentation for more info on profiles.
 
 ## Symlink files
 
@@ -44,7 +36,7 @@ You can also installed the `MixedContentsManager`, to do so install as previousl
 the `--mixed` options. For example on the default profile :
 
 ```bash
-python -m jupyterdrive default --mixed
+python -m jupyterdrive --mixed
 ```
 
 The mixed content manager will show both contents from local hard drive and remote
@@ -58,7 +50,7 @@ need to modify these file manually to have the contents maager working in most c
 
 To modify the configuration of the mixed contents manager you need to update the following files:
 
-`<profile_mixed>/ipython_notebook_config.json` which by default should heve the following structure :
+`<config-dir>/jupyter_notebook_config.json` which by default should have the following structure :
 
 
 ```json
@@ -114,7 +106,7 @@ The second config file that deals with configuring the frontend should be:
 
 To modify it, in a notebook access the config object, and extract defautl value: 
 `>>> data = IPython.notebook.contents.config.data` . Change one of the values, 
-for example : `>>> data.mixed_contents.schema[0].root = 'new_root'`. Update teh config with the new value :
+for example : `>>> data.mixed_contents.schema[0].root = 'new_root'`. Update the config with the new value :
 `>>> IPython.notebook.contents.config.update(data)`.
 
 
