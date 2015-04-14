@@ -5,16 +5,31 @@ import os
 import json
 import io
 
-from IPython.utils.py3compat import cast_unicode_py2
-import jupyter_notebook.nbextensions as nbe
-from jupyter_core.paths import jupyter_config_dir
-from traitlets.config import Config, JSONFileConfigLoader, ConfigFileNotFound
+
+try :
+    import  jupyter_notebook.nbextensions as nbe
+    JUPYTER = True
+except ImportError as e:
+    import IPython.html.nbextensions as nbe
+    JUPYTER = False
 
 
-def install(symlink=True, mixed=False, user=False, prefix=None,
+
+if JUPYTER:
+    from IPython.paths import locate_profile
+    from IPython.utils.py3compat import cast_unicode_py2
+    from jupyter_core.paths import jupyter_config_dir
+    from traitlets.config import Config, JSONFileConfigLoader, ConfigFileNotFound
+else :
+    import IPython
+    import IPython.html.nbextensions as nbe
+    from IPython.utils.path import locate_profile
+    from IPython.utils.py3compat import cast_unicode_py2
+
+
+def install(profile='default', symlink=True, mixed=False, user=False, prefix=None,
             verbose=False, path=None):
     dname = os.path.dirname(__file__)
-    pdir = jupyter_config_dir()
 
     # miht want to check if already installed and overwrite if exist
     if symlink and verbose:
@@ -29,7 +44,19 @@ def install(symlink=True, mixed=False, user=False, prefix=None,
                                  prefix=prefix,
                                  nbextensions_dir=path)
 
-    jc = JSONFileConfigLoader('jupyter_notebook_config.json',pdir)
+    activate(profile, mixed=mixed)
+
+def activate(profile=None, mixed=False):
+    dname = os.path.dirname(__file__)
+   
+    if JUPYTER:
+        pdir = jupyter_config_dir()
+        cff_name = 'jupyter_notebook_config.json'
+    else:
+        pdir = locate_profile(profile)
+
+    jc = JSONFileConfigLoader(cff_name, pdir)
+
 
 
     try:
@@ -38,19 +65,21 @@ def install(symlink=True, mixed=False, user=False, prefix=None,
         config = Config()
     if 'NotebookApp' in config:
         if ('tornado_settings' in config['NotebookApp']) or ('contents_manager_class' in config['NotebookApp']):
-            # TODO, manually merge tornado settin if exist
-            # but cannot do anythin automatically if contents_manager_calss is set
+            # TODO, manually merge tornado setting if exist
+            # but cannot do anything automatically if contents_manager_calss is set
             raise ValueError('You already got some configuration that will conflict with google drive. Bailin out')
     if mixed :
         drive_config  = JSONFileConfigLoader('mixed_contents.json', dname).load_config()
     else :
-        drive_config  = JSONFileConfigLoader('ipython_notebook_config.json', dname).load_config()
+        drive_config  = JSONFileConfigLoader('jupyter_notebook_config.json', dname).load_config()
     config.merge(drive_config)
-    print('Activating Google Drive integration for profile "%s"' % profile)
-    config['nbformat'] = 1
+    if not JUPYTER:
+        print('Activating Google Drive integration for profile "%s"' % profile)
+    else:
+        print('Activating Google Drive integration')
+    config['format'] = 1
 
-    print('Activating Google Drive integration')
-    with io.open(os.path.join(pdir,'jupyter_notebook_config.json'),'w', encoding='utf-8') as f:
+    with io.open(os.path.join(pdir,cff_name),'w', encoding='utf-8') as f:
         f.write(cast_unicode_py2(json.dumps(config, indent=2)))
 
 def deactivate(profile):
@@ -67,6 +96,8 @@ def main(argv=None):
                     description='Install Google Drive integration for Jupyter.')
     parser.add_argument("-m", "--mixed", help="Installed the mixed content manager",
                     action="store_true")
+    parser.add_argument('profile', nargs='?', default=None, metavar=('<profile_name>'), help='profile name in which to install google drive integration for IPython 3.x')
+
     parser.add_argument("-S", "--no-symlink", help="do not symlink at install time",
                     action="store_false", dest='symlink', default=True)
     parser.add_argument("-u", "--user", help="force install in user land",
@@ -81,7 +112,8 @@ def main(argv=None):
 
     install(   path=args.path,
               mixed=args.mixed,
-            prefix=args.prefix,
+            profile=args.prefix,
+             prefix=args.prefix,
             symlink=args.symlink,
             verbose=args.verbose
             )

@@ -1,5 +1,6 @@
 # Google Drive support for Jupyter Notebook
 
+
 This repository contains custom
 [`Contents`](https://github.com/ipython/ipython/blob/master/IPython/html/static/services/contents.js) classes that allows IPython to use
 Google Drive for file management.  The code is a organized as a python package
@@ -23,6 +24,11 @@ Drive, run
 ```bash
 python -m jupyterdrive
 ```
+
+## Note on Jupyter/IPython
+
+We try to support both IPython 3.x and above version, though many changes in configuration 
+between IPython 3.x and after make the exact path of configuration may vary from system to systems.
 
 ## Symlink files
 
@@ -50,7 +56,7 @@ need to modify these file manually to have the contents maager working in most c
 
 To modify the configuration of the mixed contents manager you need to update the following files:
 
-`<config-dir>/jupyter_notebook_config.json` which by default should have the following structure :
+Under Jupyter/IPython 4.x+ `<config-dir>/jupyter_notebook_config.json` which by default should have the following structure :
 
 
 ```json
@@ -77,6 +83,8 @@ To modify the configuration of the mixed contents manager you need to update the
 
 }
 ```
+
+Under IPython 3.x This file would be `<profile>/ipython_notebook_config.json`
 
 The `root` field of `filesystem_scheme` represent the name that would be use as
 virtual mount points for the contents manager in the dashbord and should be
