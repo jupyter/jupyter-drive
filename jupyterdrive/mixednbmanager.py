@@ -3,9 +3,14 @@
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-from IPython.html.services.contents.manager import ContentsManager
-from IPython.utils.traitlets import List
-from IPython.utils.importstring import import_item
+try:
+    from jupyter_notebook.services.contents.manager import ContentsManager
+    from traitlets.traitlets import List
+    from traitlets import import_item
+except ImportError:
+    from IPython.html.services.contents.manager import ContentsManager
+    from IPython.utils.traitlets import List
+    from IPython.utils.importstring import import_item
 
 def _split_path(path):
     """split a path return by the api
