@@ -5,10 +5,8 @@
 
 try:
     from jupyter_notebook.services.contents.manager import ContentsManager
-    from jupyter_notebook.services.contents.filemanager import FileContentsManager
 except ImportError:
     from IPython.html.services.contents.manager import ContentsManager
-    from IPython.html.services.contents.filemanager import FileContentsManager
 
 class ClientSideContentsManager(ContentsManager):
     """Dummy contents manager for use with client-side contents APIs like GDrive

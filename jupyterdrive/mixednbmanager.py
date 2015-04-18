@@ -183,8 +183,8 @@ class MixedContentsManager(ContentsManager):
         """
 
         def _wrapper_method(self, old_path, new_path):
-            old_path, _old_path, old_sentinel =  _split_path(path);
-            new_path, _new_path, new_sentinel =  _split_path(path);
+            old_path, _old_path, old_sentinel =  _split_path(old_path);
+            new_path, _new_path, new_sentinel =  _split_path(new_path);
 
             if old_sentinel != new_sentinel:
                 raise ValueError('Does not know how to move things across contents manager mountpoints')
@@ -198,7 +198,7 @@ class MixedContentsManager(ContentsManager):
                 sub = rename_meth('/'.join(_old_path), '/'.join(_new_path))
                 return sub
             else :
-                return rename_method(self, old_path, new_path)
+                return rename_meth(self, old_path, new_path)
         return _wrapper_method
 
     @path_dispatch_rename

@@ -12,6 +12,7 @@ install:
     - pip install pytest pytest-cov coveralls
 script:
     - ipython profile create
+    - pyflakes **/*.py
     - py.test --cov jupyterdrive
 after_success:
     - coveralls
