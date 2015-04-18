@@ -11,6 +11,10 @@ def doesmatch(TheClass):
 
 
     """
+    import sys 
+
+    if sys.version_info.major < 3:
+        return None
     S =  TheClass.__base__
     for meth_name in dir(TheClass):
         if not hasattr(S, meth_name):
@@ -19,6 +23,7 @@ def doesmatch(TheClass):
         if(callable(meth)):
             try:
                 match =   (inspect.signature(meth) == inspect.signature(getattr(S,meth_name)))
+                #assert(match)
                 if not match:
                     print(meth_name, ' : does not match parent signature', inspect.signature(meth) , inspect.signature(getattr(S,meth_name)))
             except ValueError:
@@ -26,6 +31,8 @@ def doesmatch(TheClass):
 
 
 
+def test_1():
+    doesmatch(ClientSideContentsManager)
 
-doesmatch(ClientSideContentsManager)
-doesmatch(MixedContentsManager)
+def test_2():
+    doesmatch(MixedContentsManager)
