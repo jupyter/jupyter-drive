@@ -1,5 +1,6 @@
 # http://travis-ci.org/#!/jupyter/jupyterdrive
 language: python
+cache: pip
 python:
     - 3.4
     - 2.7
