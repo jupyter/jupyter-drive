@@ -23,6 +23,8 @@ if JUPYTER:
 else :
     from IPython.utils.path import locate_profile
     from IPython.utils.py3compat import cast_unicode_py2
+    from IPython.config import Config, JSONFileConfigLoader, ConfigFileNotFound
+    
 
 
 def install(profile='default', symlink=True, mixed=False, user=False, prefix=None,
@@ -52,6 +54,7 @@ def activate(profile=None, mixed=False):
         cff_name = 'jupyter_notebook_config.json'
     else:
         pdir = locate_profile(profile)
+        cff_name = 'ipython_notebook_config.json'
 
     jc = JSONFileConfigLoader(cff_name, pdir)
 
