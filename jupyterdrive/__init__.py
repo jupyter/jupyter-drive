@@ -21,8 +21,6 @@ if JUPYTER:
     from jupyter_core.paths import jupyter_config_dir
     from traitlets.config import Config, JSONFileConfigLoader, ConfigFileNotFound
 else :
-    import IPython
-    import IPython.html.nbextensions as nbe
     from IPython.utils.path import locate_profile
     from IPython.utils.py3compat import cast_unicode_py2
 
@@ -31,7 +29,7 @@ def install(profile='default', symlink=True, mixed=False, user=False, prefix=Non
             verbose=False, path=None):
     dname = os.path.dirname(__file__)
 
-    # miht want to check if already installed and overwrite if exist
+    # might want to check if already installed and overwrite if exist
     if symlink and verbose:
         print('Will try symlink nbextension')
     if mixed and verbose:
@@ -61,7 +59,7 @@ def activate(profile=None, mixed=False):
 
     try:
         config = jc.load_config();
-    except (ConfigFileNotFound,ValueError) as e:
+    except (ConfigFileNotFound,ValueError):
         config = Config()
     if 'NotebookApp' in config:
         if ('tornado_settings' in config['NotebookApp']) or ('contents_manager_class' in config['NotebookApp']):
@@ -112,8 +110,9 @@ def main(argv=None):
 
     install(   path=args.path,
               mixed=args.mixed,
-            profile=args.prefix,
+               user=args.user,
              prefix=args.prefix,
+            profile=args.prefix,
             symlink=args.symlink,
             verbose=args.verbose
             )
