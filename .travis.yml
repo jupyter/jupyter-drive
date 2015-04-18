@@ -7,10 +7,10 @@ sudo: false
 before_install:
     - git clone --quiet --depth 1 https://github.com/minrk/travis-wheels travis-wheels
 install:
-    - pip install -f travis-wheels/wheelhouse -r requirements.txt coveralls
+    - pip install -f travis-wheels/wheelhouse -r requirements.txt
     - pip install -e .
-    - pip install -f pytest
+    - pip install pytest pytest-cov coveralls
 script:
-    - py.test
+    - py.test --cov jupyterdrive
 after_success:
     - coveralls
