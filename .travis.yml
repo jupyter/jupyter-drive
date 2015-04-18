@@ -1,5 +1,6 @@
 # http://travis-ci.org/#!/jupyter/jupyterdrive
 language: python
+cache: pip
 python:
     - 3.4
     - 2.7
@@ -9,9 +10,10 @@ before_install:
 install:
     - pip install -f travis-wheels/wheelhouse -r requirements.txt
     - pip install -e .
-    - pip install pytest pytest-cov coveralls
+    - pip install pytest pytest-cov coveralls pyflakes
 script:
     - ipython profile create
+    - pyflakes **/*.py
     - py.test --cov jupyterdrive
 after_success:
     - coveralls
