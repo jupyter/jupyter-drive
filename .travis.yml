@@ -11,6 +11,7 @@ install:
     - pip install -e .
     - pip install pytest pytest-cov coveralls
 script:
+    - ipython profile create
     - py.test --cov jupyterdrive
 after_success:
     - coveralls
