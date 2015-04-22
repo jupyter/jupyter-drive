@@ -24,7 +24,6 @@ else :
     from IPython.utils.path import locate_profile
     from IPython.utils.py3compat import cast_unicode_py2
     from IPython.config import Config, JSONFileConfigLoader, ConfigFileNotFound
-    
 
 
 def install(profile='default', symlink=True, mixed=False, user=False, prefix=None,
@@ -46,42 +45,58 @@ def install(profile='default', symlink=True, mixed=False, user=False, prefix=Non
 
     activate(profile, mixed=mixed)
 
+class jconfig(object):
+
+    def __init__(self, profile):
+        """
+        A context manager that simply expose the configuration values.
+
+        Mutate the value of the configuration while in the context manager,
+        and it will be written to disk on exit.
+        """
+        self.profile = profile
+
+    def __enter__(self):
+        if JUPYTER:
+            self.pdir = jupyter_config_dir()
+            self.cff_name = 'jupyter_notebook_config.json'
+        else:
+            self.pdir = locate_profile(self.profile)
+            self.cff_name = 'ipython_notebook_config.json'
+
+        jc = JSONFileConfigLoader(self.cff_name, self.pdir)
+
+        try:
+            self.config = jc.load_config();
+        except (ConfigFileNotFound,ValueError):
+            self.config = Config()
+        return self.config
+
+
+    def __exit__( self, type, value, tb ):
+        self.config['format'] = 1
+        with io.open(os.path.join(self.pdir,self.cff_name),'w', encoding='utf-8') as f:
+            f.write(cast_unicode_py2(json.dumps(self.config, indent=2)))
+
 def activate(profile=None, mixed=False):
     dname = os.path.dirname(__file__)
-   
-    if JUPYTER:
-        pdir = jupyter_config_dir()
-        cff_name = 'jupyter_notebook_config.json'
-    else:
-        pdir = locate_profile(profile)
-        cff_name = 'ipython_notebook_config.json'
 
-    jc = JSONFileConfigLoader(cff_name, pdir)
+    with jconfig(profile) as config:
+        if 'NotebookApp' in config:
+            if ('tornado_settings' in config['NotebookApp']) or ('contents_manager_class' in config['NotebookApp']):
+                # TODO, manually merge tornado setting if exist
+                # but cannot do anything automatically if contents_manager_calss is set
+                raise ValueError('You already got some configuration that will conflict with google drive. Bailin out')
+        if mixed :
+            drive_config  = JSONFileConfigLoader('mixed_contents.json', dname).load_config()
+        else :
+            drive_config  = JSONFileConfigLoader('jupyter_notebook_config.json', dname).load_config()
+        config.merge(drive_config)
+        if not JUPYTER:
+            print('Activating Google Drive integration for profile "%s"' % profile)
+        else:
+            print('Activating Google Drive integration')
 
-
-
-    try:
-        config = jc.load_config();
-    except (ConfigFileNotFound,ValueError):
-        config = Config()
-    if 'NotebookApp' in config:
-        if ('tornado_settings' in config['NotebookApp']) or ('contents_manager_class' in config['NotebookApp']):
-            # TODO, manually merge tornado setting if exist
-            # but cannot do anything automatically if contents_manager_calss is set
-            raise ValueError('You already got some configuration that will conflict with google drive. Bailin out')
-    if mixed :
-        drive_config  = JSONFileConfigLoader('mixed_contents.json', dname).load_config()
-    else :
-        drive_config  = JSONFileConfigLoader('jupyter_notebook_config.json', dname).load_config()
-    config.merge(drive_config)
-    if not JUPYTER:
-        print('Activating Google Drive integration for profile "%s"' % profile)
-    else:
-        print('Activating Google Drive integration')
-    config['format'] = 1
-
-    with io.open(os.path.join(pdir,cff_name),'w', encoding='utf-8') as f:
-        f.write(cast_unicode_py2(json.dumps(config, indent=2)))
 
 def deactivate(profile):
     """should be a matter of just unsetting the above keys
