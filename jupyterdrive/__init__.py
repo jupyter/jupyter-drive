@@ -5,6 +5,11 @@ import os
 import json
 import io
 
+import logging
+
+log = logging.getLogger(__name__)
+log.setLevel(20)
+
 
 try :
     import  jupyter_notebook.nbextensions as nbe
@@ -26,17 +31,18 @@ else :
     from IPython.config import Config, JSONFileConfigLoader, ConfigFileNotFound
 
 
+
 def install(profile='default', symlink=True, mixed=False, user=False, prefix=None,
             verbose=False, path=None):
     dname = os.path.dirname(__file__)
 
     # might want to check if already installed and overwrite if exist
     if symlink and verbose:
-        print('Will try symlink nbextension')
+        log.info('Will try symlink nbextension')
     if mixed and verbose:
-        print('Will install mixed content manager')
+        log.info('Will install mixed content manager')
     if prefix and verbose:
-        print("I'll install in prefix:", prefix)
+        log.info("I'll install in prefix:", prefix)
     nbe.install_nbextension(os.path.join(dname,'gdrive'),
                                 symlink=symlink,
                                    user=user,
@@ -75,17 +81,18 @@ class jconfig(object):
 
     def __exit__( self, type, value, tb ):
         self.config['format'] = 1
+        # option to cleanup empty dicts
         with io.open(os.path.join(self.pdir,self.cff_name),'w', encoding='utf-8') as f:
-            f.write(cast_unicode_py2(json.dumps(self.config, indent=2)))
+            f.write(cast_unicode_py2(json.dumps(self.config, indent=2, default=lambda _,__:{})))
 
 def activate(profile=None, mixed=False):
     dname = os.path.dirname(__file__)
 
     with jconfig(profile) as config:
         if 'NotebookApp' in config:
-            if ('tornado_settings' in config['NotebookApp']) or ('contents_manager_class' in config['NotebookApp']):
+            if (config['NotebookApp'].get('tornado_setting',{})) or (config['NotebookApp'].get('contents_manager_class',{})):
                 # TODO, manually merge tornado setting if exist
-                # but cannot do anything automatically if contents_manager_calss is set
+                # but cannot do anything automatically if contents_manager_class is set
                 raise ValueError('You already got some configuration that will conflict with google drive. Bailin out')
         if mixed :
             drive_config  = JSONFileConfigLoader('mixed_contents.json', dname).load_config()
@@ -93,16 +100,28 @@ def activate(profile=None, mixed=False):
             drive_config  = JSONFileConfigLoader('jupyter_notebook_config.json', dname).load_config()
         config.merge(drive_config)
         if not JUPYTER:
-            print('Activating Google Drive integration for profile "%s"' % profile)
+            log.info('Activating Google Drive integration for profile "%s"' % profile)
         else:
-            print('Activating Google Drive integration')
+            log.info('Activating Google Drive integration')
 
 
-def deactivate(profile):
+def deactivate(profile='default'):
     """should be a matter of just unsetting the above keys
     """
+    with jconfig(profile) as config: 
+        deact = True;
+        if not getattr(config.NotebookApp.contents_manager_class, 'startswith',lambda x:False)('jupyterdrive'):
+            deact=False
+        if 'gdrive' not in getattr(config.NotebookApp.tornado_settings,'get', lambda x:'')('contents_js_source',''):
+            deact=False
+        if deact:
+            del config['NotebookApp']['tornado_settings']['contents_js_source']    
+            del config['NotebookApp']['contents_manager_class']
+        # try to remove MixedContent Conf
+        
 
-    raise NotImplemented('deactivating a profile is not yet implemented.')
+
+
 
 
 def main(argv=None):
@@ -124,13 +143,17 @@ def main(argv=None):
                     action='store', default=None)
     parser.add_argument("-v", "--verbose", help="increase verbosity",
                     action='store_true')
+    parser.add_argument("--deactivate", help='deactivate', action='store_true')
     args = parser.parse_args(argv)
 
-    install(   path=args.path,
-              mixed=args.mixed,
-               user=args.user,
-             prefix=args.prefix,
-            profile=args.prefix,
-            symlink=args.symlink,
-            verbose=args.verbose
-            )
+    if args.deactivate:
+        deactivate()
+    else:
+        install(   path=args.path,
+                  mixed=args.mixed,
+                   user=args.user,
+                 prefix=args.prefix,
+                profile=args.prefix,
+                symlink=args.symlink,
+                verbose=args.verbose
+                )
