@@ -31,8 +31,6 @@ else :
     from IPython.config import Config, JSONFileConfigLoader, ConfigFileNotFound
 
 
-from json import JSONEncoder
-
 
 def install(profile='default', symlink=True, mixed=False, user=False, prefix=None,
             verbose=False, path=None):
@@ -110,7 +108,6 @@ def activate(profile=None, mixed=False):
 def deactivate(profile='default'):
     """should be a matter of just unsetting the above keys
     """
-    dname = os.path.dirname(__file__)
     with jconfig(profile) as config: 
         deact = True;
         if not getattr(config.NotebookApp.contents_manager_class, 'startswith',lambda x:False)('jupyterdrive'):
