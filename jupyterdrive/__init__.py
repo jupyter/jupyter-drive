@@ -34,6 +34,7 @@ else :
 
 def install(profile='default', symlink=True, mixed=False, user=False, prefix=None,
             verbose=False, path=None):
+
     dname = os.path.dirname(__file__)
 
     # might want to check if already installed and overwrite if exist
@@ -83,9 +84,16 @@ class jconfig(object):
         self.config['format'] = 1
         # option to cleanup empty dicts
         with io.open(os.path.join(self.pdir,self.cff_name),'w', encoding='utf-8') as f:
-            f.write(cast_unicode_py2(json.dumps(self.config, indent=2, default=lambda _,__:{})))
+            f.write(cast_unicode_py2(json.dumps(self.config, indent=2, default=lambda _:{})))
 
-def activate(profile=None, mixed=False):
+
+def activate(profile='default', mixed=False):
+    if not profile:
+        raise ValueError('Profile cannot be NoneType')
+
+    return _activate(profile, mixed)
+
+def _activate(profile, mixed):
     dname = os.path.dirname(__file__)
 
     with jconfig(profile) as config:
@@ -112,7 +120,7 @@ def deactivate(profile='default'):
         deact = True;
         if not getattr(config.NotebookApp.contents_manager_class, 'startswith',lambda x:False)('jupyterdrive'):
             deact=False
-        if 'gdrive' not in getattr(config.NotebookApp.tornado_settings,'get', lambda x:'')('contents_js_source',''):
+        if 'gdrive' not in getattr(config.NotebookApp.tornado_settings,'get', lambda _,__:'')('contents_js_source',''):
             deact=False
         if deact:
             del config['NotebookApp']['tornado_settings']['contents_js_source']    
@@ -131,7 +139,7 @@ def main(argv=None):
                     description='Install Google Drive integration for Jupyter.')
     parser.add_argument("-m", "--mixed", help="Installed the mixed content manager",
                     action="store_true")
-    parser.add_argument('profile', nargs='?', default=None, metavar=('<profile_name>'), help='profile name in which to install google drive integration for IPython 3.x')
+    parser.add_argument('profile', nargs='?', default='default', metavar=('<profile_name>'), help='profile name in which to install google drive integration for IPython 3.x')
 
     parser.add_argument("-S", "--no-symlink", help="do not symlink at install time",
                     action="store_false", dest='symlink', default=True)
@@ -153,7 +161,7 @@ def main(argv=None):
                   mixed=args.mixed,
                    user=args.user,
                  prefix=args.prefix,
-                profile=args.prefix,
+                profile=args.profile,
                 symlink=args.symlink,
                 verbose=args.verbose
                 )
