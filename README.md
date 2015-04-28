@@ -10,7 +10,7 @@ and activate/deactivate different IPython profiles to be used with Google drive.
 To install this package, run
 
 ```bash
-git clone git+git://github.com/jupyter/jupyter-drive.git
+git clone git://github.com/jupyter/jupyter-drive.git
 pip install -e jupyter-drive
 ```
 
