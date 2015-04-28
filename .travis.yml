@@ -14,11 +14,11 @@ install:
 script:
     - ipython profile create
     - pyflakes **/*.py
-    - python -m jupyterdrive --mixed
-    - python -m jupyterdrive --deactivate
-    - python -m jupyterdrive --deactivate
-    - python -m jupyterdrive 
-    - python -m jupyterdrive --deactivate
+    - python -m jupyterdrive --mixed --user
+    - python -m jupyterdrive --deactivate --user
+    - python -m jupyterdrive --deactivate --user
+    - python -m jupyterdrive  --user
+    - python -m jupyterdrive --deactivate --user
     - py.test --cov jupyterdrive
 after_success:
     - coveralls
