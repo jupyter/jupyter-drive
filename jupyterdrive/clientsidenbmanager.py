@@ -3,9 +3,11 @@
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
 
-try:
+from .compat import JUPYTER
+
+if JUPYTER:
     from jupyter_notebook.services.contents.manager import ContentsManager
-except ImportError:
+else:
     from IPython.html.services.contents.manager import ContentsManager
 
 class ClientSideContentsManager(ContentsManager):

@@ -2,12 +2,13 @@
 
 # Copyright (c) IPython Development Team.
 # Distributed under the terms of the Modified BSD License.
+from .compat import JUPYTER
 
-try:
+if JUPYTER:
     from jupyter_notebook.services.contents.manager import ContentsManager
     from traitlets.traitlets import List
     from traitlets import import_item
-except ImportError:
+else:
     from IPython.html.services.contents.manager import ContentsManager
     from IPython.utils.traitlets import List
     from IPython.utils.importstring import import_item

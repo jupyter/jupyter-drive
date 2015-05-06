@@ -6,26 +6,20 @@ import json
 import io
 
 import logging
+from .compat import JUPYTER
 
 log = logging.getLogger(__name__)
 log.setLevel(20)
 
 
-try :
-    import  jupyter_notebook.nbextensions as nbe
-    JUPYTER = True
-except ImportError as e:
-    import IPython.html.nbextensions as nbe
-    JUPYTER = False
-
-
-
 if JUPYTER:
+    import  jupyter_notebook.nbextensions as nbe
     from IPython.paths import locate_profile
     from IPython.utils.py3compat import cast_unicode_py2
     from jupyter_core.paths import jupyter_config_dir
     from traitlets.config import Config, JSONFileConfigLoader, ConfigFileNotFound
 else :
+    import IPython.html.nbextensions as nbe
     from IPython.utils.path import locate_profile
     from IPython.utils.py3compat import cast_unicode_py2
     from IPython.config import Config, JSONFileConfigLoader, ConfigFileNotFound
