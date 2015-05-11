@@ -3,7 +3,7 @@
 
 This repository contains custom
 [`Contents`](https://github.com/ipython/ipython/blob/master/IPython/html/static/services/contents.js) classes that allows IPython to use
-Google Drive for file management.  The code is a organized as a python package
+Google Drive for file management.  The code is organized as a python package
 that contains functions to install a Jupyter Notebook JavaScript extension,
 and activate/deactivate different IPython profiles to be used with Google drive.
 
@@ -28,31 +28,30 @@ python -m jupyterdrive
 ## Note on Jupyter/IPython
 
 We try to support both IPython 3.x and above version, though many changes in configuration 
-between IPython 3.x and after make the exact path of configuration may vary from system to systems.
+between IPython 3.x and later versions may cause the exact configuration path to vary from system to system.
 
 ## Symlink files
 
 By default all the Javascript files will be symlinked, so any update to the package python
 or javascript will be reflected on your python server.
-use the  `--no-symlink` option to actually copy the file on their final destination.
+Use the  `--no-symlink` option to actually copy the file on their final destination.
 
 ## Mixed contents
 
-You can also installed the `MixedContentsManager`, to do so install as previously with
-the `--mixed` options. For example on the default profile :
+You can also install the `MixedContentsManager`, to do so install as before with
+the `--mixed` options. For example, on the default profile:
 
 ```bash
 python -m jupyterdrive --mixed
 ```
 
-The mixed content manager will show both contents from local hard drive and remote
-google drive as two directory in your dashboard.
+The mixed content manager will show contents from both the local hard drive and the remote
+google drive as two directories in your dashboard.
 
 #### mixed content configuration.
 
-All the following files should be created automatically
-once you have used the content manager once. You should
-need to modify these file manually to have the contents maager working in most cases.
+All of the following files should be created automatically
+the first time that you run the content manager. You might need to modify these files manually to get the contents manager to work.
 
 To modify the configuration of the mixed contents manager you need to update the following files:
 
@@ -84,13 +83,11 @@ Under Jupyter/IPython 4.x+ `<config-dir>/jupyter_notebook_config.json` which by 
 }
 ```
 
-Under IPython 3.x This file would be `<profile>/ipython_notebook_config.json`
+Under IPython 3.x This file would be `<profile>/ipython_notebook_config.json`.
 
-The `root` field of `filesystem_scheme` represent the name that would be use as
-virtual mount points for the contents manager in the dashbord and should be
-consistent with the name given in `nbconfig/common.json` describe below.
+The `root` field of `filesystem_scheme` represents the name that would be used as the virtual mount points for the contents manager in the dashbord and should be consistent with the name given in `nbconfig/common.json` described below.
 
-the `contents` field contains the fully qualified name of a Contents manager to
+The `contents` field contains the fully qualified name of a Contents manager to
 mount on the mountpoint.
 
 The second config file that deals with configuring the frontend should be:
@@ -112,17 +109,17 @@ The second config file that deals with configuring the frontend should be:
   }
 ```
 
-To modify it, in a notebook access the config object, and extract defautl value: 
+To modify it, in a notebook access the config object, and extract default value: 
 `>>> data = IPython.notebook.contents.config.data` . Change one of the values, 
-for example : `>>> data.mixed_contents.schema[0].root = 'new_root'`. Update the config with the new value :
+for example : `>>> data.mixed_contents.schema[0].root = 'new_root'`. Update the config to the new value :
 `>>> IPython.notebook.contents.config.update(data)`.
 
 
 As stated previously the `root` value should match python side config file,
-`contents` represent the client-side content manager that need to be use.
-`stripjs` is a boolean value that indicate weather the name of the mount point
-should be stripped from the various path on the javascript side before passing
-it to the differents subcontent manager.
+`contents` represents the client-side content manager that need to be used.
+`stripjs` is a boolean value that indicates whether the name of the mount point
+should be stripped from the various paths on the javascript side before passing
+it to the different subcontent managers.
 
 
 
@@ -142,12 +139,12 @@ you can get rid of `~/.ipython/profile_defaut/ipython_notebook_config.json`
 config file to deactivate Google Drive as well as other config options.
 
 The configuration of IPython/Jupyter is done through the `.json` file in the
-profile situated in the profile and will take precedence on configuration done
+profile and will take precedence on configuration done
 in `.py` files, though you can still use non conflicting options.
 
 # First launch
 
-Launch ipython with ths profile in which you activated jupyter-drive:
+Launch IPython with the profile in which you activated jupyter-drive:
 
 ```bash
 ipython notebook --profile <profilename>
@@ -155,7 +152,7 @@ ipython notebook --profile <profilename>
 
 On first launch, the application will ask you for the authorization to access
 your files on Google Drive.  It only asks for permission to create new files or
- access files it has created or that you manually open with this application.
+to access files it has created or that you manually open with this application.
 It also requires permission to access file/directory metadata, in order
 to display the list of files/directories in the tree view.
 
@@ -164,7 +161,7 @@ The request pop-up looks like the following:
 ![auth screenshot](img/auth.png)
 
 Clicking ok will open a Google OAuth pop-up.  You will see that the `Jupyter
-Drive` application want access to some informations about your files. Keep that
+Drive` application wants access to some information about your files. Keep that
 in mind if you want to revoke access at a later point.
 
 ![](img/popup.png)
@@ -177,7 +174,7 @@ view files/directories in the tree view.
 
 The contents manager can access the `common` section of nbconfig, thus
 you can set config values in `<profile_dir>/nbconfig/common.json`. The default
-value that are use are the following:
+values that are used are the following:
 
 ```json
 
@@ -190,5 +187,5 @@ value that are use are the following:
 }
 ```
 
-The `APP_ID` section is not yet configurable, but shoudl be configurable in the
+The `APP_ID` section is not yet configurable, but should be configurable in the
 same way at some point in the future.
