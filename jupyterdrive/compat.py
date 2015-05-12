@@ -30,6 +30,8 @@ else:
     try:
         # if jupyter is installed, assume jupyter
         import  jupyter_notebook.nbextensions
+        # silence pyflakes
+        jupyter_notebook.nbextensions
         JUPYTER = True
     except ImportError:
         pass
