@@ -22,7 +22,7 @@ export interface Notebook {
  * the notebook server: creating new notebooks, and converting to/from
  * the on-disk format.
  */
-export class notebook_model {
+export module notebook_model {
     
     /**
      * Utility method to transform a notebook.
@@ -31,7 +31,7 @@ export class notebook_model {
      * @param {Function} transform_fn that will be applied to every object
      *     that can be a multiline string according to IPEP 17.
      */
-    public transform_notebook(notebook:Notebook, transform_fn) {
+    var transform_notebook = function(notebook:Notebook, transform_fn) {
         if (!notebook['cells']) {
             return;
         }
@@ -54,7 +54,7 @@ export class notebook_model {
      * @param {String} contents The contents of the file, as a string.
      * @return {Object} a JSON representation of the notebook.
      */
-    public notebook_from_file_contents(contents:string):Notebook {
+    function notebook_from_file_contents(contents:string):Notebook {
         var notebook = JSON.parse(contents);
         var unsplit_lines = function(multiline_string) {
             if (Array.isArray(multiline_string)) {
@@ -72,7 +72,7 @@ export class notebook_model {
      * @param {Object} notebook a JSON representation of the notebook.
      * @return {Object} The JSON representation with lines split.
      */
-    public file_contents_from_notebook(notebook:Notebook):Notebook {
+    function file_contents_from_notebook(notebook:Notebook):Notebook {
         var notebook_copy = JSON.parse(JSON.stringify(notebook));
         var split_lines = function(obj) {
             if(typeof(obj)!=='string'){
@@ -96,7 +96,7 @@ export class notebook_model {
      * @param {string} name Notebook name
      * @return {Object} JSON representation of a new notebook.
      */
-    public new_notebook():Notebook{
+    function new_notebook():Notebook{
         return {
             'cells' : [{
                 'cell_type': 'code',
