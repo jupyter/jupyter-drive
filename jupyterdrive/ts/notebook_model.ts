@@ -15,16 +15,15 @@ export interface Notebook {
     nbformat_minor:number;
 }
 
+/**
+ * Functions related to the Notebook JSON representation
+ *
+ * These functions replicate logic that would usually be performed by
+ * the notebook server: creating new notebooks, and converting to/from
+ * the on-disk format.
+ */
 export class notebook_model {
-    /**
-     * Functions related to the Notebook JSON representation
-     *
-     * These functions replicate logic that would usually be performed by
-     * the notebook server: creating new notebooks, and converting to/from
-     * the on-disk format.
-     */
-
-
+    
     /**
      * Utility method to transform a notebook.
      * @param {Object} notebook JSON representation of a notebook.  Note this
