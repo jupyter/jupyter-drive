@@ -1,0 +1,25 @@
+{
+  "name": "jupyter-drive",
+  "version": "1.0.0",
+  "description": "",
+  "main": " ",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/jupyter/jupyter-drive.git"
+  },
+  "author": "Matthias Bussonnier",
+  "license": "BSD",
+  "bugs": {
+    "url": "https://github.com/jupyter/jupyter-drive/issues"
+  },
+  "homepage": "https://github.com/jupyter/jupyter-drive",
+  "dependencies": {
+    "gulp": "^3.8.11",
+    "gulp-typescript": "^2.7.3",
+    "gulp-watch": "^4.2.4",
+    "typescript": "^1.5.0-beta"
+  }
+}

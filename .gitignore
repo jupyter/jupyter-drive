@@ -7,3 +7,5 @@ dist/
 *.un~
 **/.ipynb_checkpoints/
 .coverage
+.*.swp
+node_modules

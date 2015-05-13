@@ -1,16 +1,21 @@
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
 //
-define(function(require) {
-    "use strict";
+//
+//
+export interface Cell {
+    source:any;
+    metadata:any;
+}
 
-    var IPython = require('base/js/namespace');
-    var $ = require('jquery');
-    var utils = require('base/js/utils');
-    var dialog = require('base/js/dialog');
-    var gapi_utils = require('./gapi_utils');
-    var drive_utils = require('./drive_utils');
+export interface Notebook {
+    cells:Cell[];
+    metadata:any;
+    nbformat:number;
+    nbformat_minor:number;
+}
 
+export class notebook_model {
     /**
      * Functions related to the Notebook JSON representation
      *
@@ -19,6 +24,7 @@ define(function(require) {
      * the on-disk format.
      */
 
+
     /**
      * Utility method to transform a notebook.
      * @param {Object} notebook JSON representation of a notebook.  Note this
@@ -26,7 +32,7 @@ define(function(require) {
      * @param {Function} transform_fn that will be applied to every object
      *     that can be a multiline string according to IPEP 17.
      */
-    var transform_notebook = function(notebook, transform_fn) {
+    public transform_notebook(notebook:Notebook, transform_fn) {
         if (!notebook['cells']) {
             return;
         }
@@ -42,14 +48,14 @@ define(function(require) {
             });
         }
     });        
-    };
+    }
 
     /**
      * Creates a JSON notebook representation from the contents of a file.
      * @param {String} contents The contents of the file, as a string.
      * @return {Object} a JSON representation of the notebook.
      */
-    var notebook_from_file_contents = function(contents) {
+    public notebook_from_file_contents(contents:string):Notebook {
         var notebook = JSON.parse(contents);
         var unsplit_lines = function(multiline_string) {
             if (Array.isArray(multiline_string)) {
@@ -58,16 +64,16 @@ define(function(require) {
                 return multiline_string;
             }
         };
-        transform_notebook(notebook, unsplit_lines);
+        this.transform_notebook(notebook, unsplit_lines);
         return notebook;
-    };
+    }
 
     /**
      * Creates the contents of a file from a JSON notebook representation.
      * @param {Object} notebook a JSON representation of the notebook.
      * @return {Object} The JSON representation with lines split.
      */
-    var file_contents_from_notebook = function(notebook) {
+    public file_contents_from_notebook(notebook:Notebook):Notebook {
         var notebook_copy = JSON.parse(JSON.stringify(notebook));
         var split_lines = function(obj) {
             if(typeof(obj)!=='string'){
@@ -82,16 +88,16 @@ define(function(require) {
             });
         };
 
-        transform_notebook(notebook, split_lines);
+        this.transform_notebook(notebook, split_lines);
         return notebook_copy;
-    };
+    }
 
     /**
      * Create a JSON representation of a new notebook
      * @param {string} name Notebook name
      * @return {Object} JSON representation of a new notebook.
      */
-    var new_notebook = function() {
+    public new_notebook():Notebook{
         return {
             'cells' : [{
                 'cell_type': 'code',
@@ -104,11 +110,6 @@ define(function(require) {
             'nbformat': 4,
             'nbformat_minor': 0
         };
-    };
-    
-    return {
-        'notebook_from_file_contents': notebook_from_file_contents,
-        'file_contents_from_notebook': file_contents_from_notebook,
-        'new_notebook': new_notebook
-    };
-});
+    }
+
+}
