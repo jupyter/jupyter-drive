@@ -1,14 +1,22 @@
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
 //
-define(function(require) {
-    "use strict";
+//
+import IPython = module('base/js/namespace');
+import $ = require('jquery');
+import utils = require('base/js/utils');
 
-    var IPython = require('base/js/namespace');
-    var $ = require('jquery');
-    var utils = require('base/js/utils');
+/** Enum for object types */
+var ArgType = {
+    PATH : 1,
+    FILE : 2,
+    LIST : 3,
+    OTHER : 4
+}
+export class Contents {
 
-    var _default = {"schema":
+
+    private _default = {"schema":
       [
           {
               "root": "local",
@@ -23,7 +31,7 @@ define(function(require) {
       ]
     };
 
-    var Contents = function(options) {
+    constructor(options) {
         // Constructor
         //
         // A contentmanager handles passing file operations
@@ -62,14 +70,14 @@ define(function(require) {
               return filesystem;
           });
       }, this));
-    };
+    }
 
     /**
      * Generates the object that represents a filesystem
      * @param {Object} filesystem
      * @return {Object} An object representing a virtual directory.
      */
-    var virtual_fs_roots = function(filesystem) {
+     virtual_fs_roots(filesystem) {
         return Object.keys(filesystem).map(function(root) {
             return {
                 type: 'directory',
@@ -77,7 +85,7 @@ define(function(require) {
                 path: root,
             };
         });
-    };
+    }
 
     /**
      * Routing functions
@@ -89,7 +97,7 @@ define(function(require) {
      * @param {String} path The path to check.
      * @return {String} The root path for the contents instance.
      */
-    var get_fs_root = function(filesystem, path) {
+    get_fs_root(filesystem, path) {
         var components = path.split('/');
         if (components.length === 0) {
             return '';
@@ -98,7 +106,7 @@ define(function(require) {
             return components[0];
         }
         return '';
-    };
+    }
 
     /**
      * Convert a path from the virtual filesystem used by the front end, to the
@@ -108,13 +116,13 @@ define(function(require) {
      * @return {String} the converted path
      *
      */
-    var from_virtual_path = function(root, path, config) {
+    from_virtual_path(root, path, config) {
         var match_conf = config.filter(function(x){return x.root == root;});
         if( match_conf[0].stripjs !== true){
           return path;
         }
         return path.substr(root.length);
-    };
+    }
 
     /**
      * Convert a path to the virtual filesystem used by the front end, from the
@@ -124,9 +132,9 @@ define(function(require) {
      * @return {String} the converted path
      *
      */
-    var to_virtual_path = function(root, path) {
+    to_virtual_path(root, path) {
         return utils.url_path_join(root, path);
-    };
+    }
 
     /**
      * Takes a file model, and convert its path to the virtual filesystem.
@@ -135,10 +143,10 @@ define(function(require) {
      * @param {Object} file The file model (this is modified by the function).
      * @return {Object} the converted file model
      */
-    var to_virtual_file = function(root, file) {
+    to_virtual_file(root, file) {
         file['path'] = to_virtual_path(root, file['path']);
         return file;
-    };
+    }
 
     /**
      * Takes a file list, and convert its path to the virtual filesystem.
@@ -147,20 +155,13 @@ define(function(require) {
      * @param {Object} list The file list (this is modified by the function).
      * @return {Object} The converted file list
      */
-    var to_virtual_list = function(root, list) {
+    to_virtual_list(root, list) {
         list['content'].forEach($.proxy(to_virtual_file, this, root));
         return list;
-    };
+    }
 
-    /** Enum for object types */
-    var ArgType = {
-        PATH : 1,
-        FILE : 2,
-        LIST : 3,
-        OTHER : 4
-    };
 
-    var to_virtual = function(root, type, object) {
+    to_virtual(root, type, object) {
         if (type === ArgType.PATH) {
             return to_virtual_path(root, object);
         } else if (type === ArgType.FILE) {
@@ -170,9 +171,9 @@ define(function(require) {
         } else {
             return object;
         }
-    };
+    }
 
-    var from_virtual = function(root, type, object, config) {
+    from_virtual(root, type, object, config) {
         if (type === ArgType.PATH) {
             return from_virtual_path(root, object, config);
         } else if (type === ArgType.FILE) {
@@ -182,7 +183,7 @@ define(function(require) {
         } else {
             return object;
         }
-    };
+    }
 
     /**
      * Route a function to the appropriate content manager class
@@ -191,7 +192,7 @@ define(function(require) {
      * @param {Array} return_types Type of the return value of the function
      * @param {Array} args the arguments to apply
      */
-    Contents.prototype.route_function = function(method_name, arg_types, return_type, args) {
+    route_function(method_name, arg_types, return_type, args) {
         var that = this;
         return this.filesystem.then(function(filesystem) {
             if (arg_types.length == 0 || arg_types[0] != ArgType.PATH) {
@@ -215,87 +216,86 @@ define(function(require) {
             return contents[method_name].apply(contents, args).then(
                 $.proxy(to_virtual, this, root, return_type));
         });
-    };
+    }
 
     /**
      * File management functions
      */
 
-    Contents.prototype.get = function (path, type, options) {
+    get(path, type, options) {
         return this.route_function(
             'get',
             [ArgType.PATH, ArgType.OTHER, ArgType.OTHER],
             ArgType.FILE, arguments);
-    };
+    }
 
-    Contents.prototype.new_untitled = function(path, options) {
+    new_untitled(path, options) {
         return this.route_function(
             'new_untitled',
             [ArgType.PATH, ArgType.OTHER],
             ArgType.FILE, arguments);
-    };
+    }
 
-    Contents.prototype.delete = function(path) {
+    delete(path) {
         return this.route_function(
             'delete',
             [ArgType.PATH],
             ArgType.OTHER, arguments);
-    };
+    }
 
-    Contents.prototype.rename = function(path, new_path) {
+    rename(path, new_path) {
         return this.route_function(
             'rename',
             [ArgType.PATH, ArgType.PATH],
             ArgType.FILE, arguments);
-    };
+    }
 
-    Contents.prototype.save = function(path, model, options) {
+    save(path, model, options) {
         return this.route_function(
             'save',
             [ArgType.PATH, ArgType.OTHER, ArgType.OTHER],
             ArgType.FILE, arguments);
-    };
+    }
 
-    Contents.prototype.list_contents = function(path, options) {
+    list_contents(path, options) {
         return this.route_function(
             'list_contents',
             [ArgType.PATH, ArgType.OTHER],
             ArgType.LIST, arguments);
-    };
+    }
 
-    Contents.prototype.copy = function(from_file, to_dir) {
+    copy(from_file, to_dir) {
         return this.route_function(
             'copy',
             [ArgType.PATH, ArgType.PATH],
             ArgType.FILE, arguments);
-    };
+    }
 
     /**
      * Checkpointing Functions
      */
 
-    Contents.prototype.create_checkpoint = function(path, options) {
+    create_checkpoint(path, options) {
         return this.route_function(
             'create_checkpoint',
             [ArgType.PATH, ArgType.OTHER],
             ArgType.OTHER, arguments);
-    };
+    }
 
-    Contents.prototype.restore_checkpoint = function(path, checkpoint_id, options) {
+    restore_checkpoint(path, checkpoint_id, options) {
         return this.route_function(
             'restore_checkpoint',
             [ArgType.PATH, ArgType.OTHER, ArgType.OTHER],
             ArgType.OTHER, arguments);
-    };
+    }
 
-    Contents.prototype.list_checkpoints = function(path, options) {
+    list_checkpoints(path, options) {
         return this.route_function(
             'list_checkpoints',
             [ArgType.PATH, ArgType.OTHER],
             ArgType.OTHER, arguments);
-    };
+    }
 
-    IPython.Contents = Contents;
+    //IPython.Contents = Contents
 
-    return {'Contents': Contents};
-});
+}
