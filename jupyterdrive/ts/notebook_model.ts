@@ -63,7 +63,7 @@ export module notebook_model {
                 return multiline_string;
             }
         };
-        this.transform_notebook(notebook, unsplit_lines);
+        transform_notebook(notebook, unsplit_lines);
         return notebook;
     }
 
@@ -87,7 +87,7 @@ export module notebook_model {
             });
         };
 
-        this.transform_notebook(notebook, split_lines);
+        transform_notebook(notebook, split_lines);
         return notebook_copy;
     }
 
