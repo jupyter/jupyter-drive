@@ -35,6 +35,14 @@ var _default = {"schema":
   ]
 };
 
+export interface File {
+    path:string
+}
+
+export interface FileList {
+    contents:any
+}
+
 export class Contents {
 
     config:any;
@@ -126,7 +134,7 @@ export class Contents {
      * @return {String} the converted path
      *
      */
-    from_virtual_path(root, path, config) {
+    from_virtual_path(root:string, path:string, config):string {
         var match_conf = config.filter(function(x){return x.root == root;});
         if( match_conf[0].stripjs !== true){
           return path;
@@ -142,7 +150,7 @@ export class Contents {
      * @return {String} the converted path
      *
      */
-    to_virtual_path(root, path) {
+    to_virtual_path(root:string, path:string):string {
         return utils.url_path_join(root, path);
     }
 
@@ -150,10 +158,10 @@ export class Contents {
      * Takes a file model, and convert its path to the virtual filesystem.
      * from Google Drive format
      * @param {String} root The root of the virtual mount point.
-     * @param {Object} file The file model (this is modified by the function).
-     * @return {Object} the converted file model
+     * @param {File} file The file model (this is modified by the function).
+     * @return {File} the converted file model
      */
-    to_virtual_file(root, file) {
+    to_virtual_file(root:string, file:File):File {
         file['path'] = this.to_virtual_path(root, file['path']);
         return file;
     }
@@ -165,13 +173,13 @@ export class Contents {
      * @param {Object} list The file list (this is modified by the function).
      * @return {Object} The converted file list
      */
-    to_virtual_list(root, list) {
+    to_virtual_list(root:string, list:FileList):FileList {
         list['content'].forEach($.proxy(this.to_virtual_file, this, root));
         return list;
     }
 
 
-    to_virtual(root, type, object) {
+    to_virtual(root:string, type, object) {
         if (type === ArgType.PATH) {
             return this.to_virtual_path(root, object);
         } else if (type === ArgType.FILE) {
@@ -183,7 +191,7 @@ export class Contents {
         }
     }
 
-    from_virtual(root, type, object, config) {
+    from_virtual(root:string, type, object, config) {
         if (type === ArgType.PATH) {
             return this.from_virtual_path(root, object, config);
         } else if (type === ArgType.FILE) {
@@ -238,7 +246,7 @@ export class Contents {
             ArgType.FILE, arguments);
     }
 
-    new_untitled(path, options) {
+    new_untitled(path:string, options) {
         return this.route_function(
             'new_untitled',
             [ArgType.PATH, ArgType.OTHER],
@@ -305,6 +313,5 @@ export class Contents {
             ArgType.OTHER, arguments);
     }
 
-    //IPython.Contents = Contents
 
 }

@@ -125,8 +125,8 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
          * Takes a file model, and convert its path to the virtual filesystem.
          * from Google Drive format
          * @param {String} root The root of the virtual mount point.
-         * @param {Object} file The file model (this is modified by the function).
-         * @return {Object} the converted file model
+         * @param {File} file The file model (this is modified by the function).
+         * @return {File} the converted file model
          */
         Contents.prototype.to_virtual_file = function (root, file) {
             file['path'] = this.to_virtual_path(root, file['path']);

@@ -1,3 +1,9 @@
+export interface File {
+    path: string;
+}
+export interface FileList {
+    contents: any;
+}
 export declare class Contents {
     config: any;
     filesystem: any;
@@ -30,7 +36,7 @@ export declare class Contents {
      * @return {String} the converted path
      *
      */
-    from_virtual_path(root: any, path: any, config: any): any;
+    from_virtual_path(root: string, path: string, config: any): string;
     /**
      * Convert a path to the virtual filesystem used by the front end, from the
      * concrete filesystem used by the Contents instance.
@@ -39,15 +45,15 @@ export declare class Contents {
      * @return {String} the converted path
      *
      */
-    to_virtual_path(root: any, path: any): void;
+    to_virtual_path(root: string, path: string): string;
     /**
      * Takes a file model, and convert its path to the virtual filesystem.
      * from Google Drive format
      * @param {String} root The root of the virtual mount point.
-     * @param {Object} file The file model (this is modified by the function).
-     * @return {Object} the converted file model
+     * @param {File} file The file model (this is modified by the function).
+     * @return {File} the converted file model
      */
-    to_virtual_file(root: any, file: any): any;
+    to_virtual_file(root: string, file: File): File;
     /**
      * Takes a file list, and convert its path to the virtual filesystem.
      * from Google Drive format
@@ -55,9 +61,9 @@ export declare class Contents {
      * @param {Object} list The file list (this is modified by the function).
      * @return {Object} The converted file list
      */
-    to_virtual_list(root: any, list: any): any;
-    to_virtual(root: any, type: any, object: any): any;
-    from_virtual(root: any, type: any, object: any, config: any): any;
+    to_virtual_list(root: string, list: FileList): FileList;
+    to_virtual(root: string, type: any, object: any): any;
+    from_virtual(root: string, type: any, object: any, config: any): any;
     /**
      * Route a function to the appropriate content manager class
      * @param {string} method_name Name of the method being called
@@ -70,7 +76,7 @@ export declare class Contents {
      * File management functions
      */
     get(path: any, type: any, options: any): any;
-    new_untitled(path: any, options: any): any;
+    new_untitled(path: string, options: any): any;
     delete(path: any): any;
     rename(path: any, new_path: any): any;
     save(path: any, model: any, options: any): any;
