@@ -2,9 +2,14 @@
 // Distributed under the terms of the Modified BSD License.
 //
 //
-import IPython = module('base/js/namespace');
+
+
 import $ = require('jquery');
-import utils = require('base/js/utils');
+
+import IPython = require('base/js/namespace')
+
+import utils = require("base/js/utils");
+import Promises = require('es6-promise');
 
 /** Enum for object types */
 var ArgType = {
@@ -13,23 +18,28 @@ var ArgType = {
     LIST : 3,
     OTHER : 4
 }
+
+
+var _default = {"schema":
+  [
+      {
+          "root": "local",
+          "stripjs" : false,
+          "contents": "services/contents"
+      },
+      {
+          "root": "gdrive",
+          "stripjs": true,
+          "contents": "./drive-contents"
+      }
+  ]
+};
+
 export class Contents {
 
+    config:any;
+    filesystem:any;
 
-    private _default = {"schema":
-      [
-          {
-              "root": "local",
-              "stripjs" : false,
-              "contents": "services/contents"
-          },
-          {
-              "root": "gdrive",
-              "stripjs": true,
-              "contents": "./drive-contents"
-          }
-      ]
-    };
 
     constructor(options) {
         // Constructor
@@ -97,7 +107,7 @@ export class Contents {
      * @param {String} path The path to check.
      * @return {String} The root path for the contents instance.
      */
-    get_fs_root(filesystem, path) {
+    get_fs_root(filesystem:string, path:string):string {
         var components = path.split('/');
         if (components.length === 0) {
             return '';
@@ -144,7 +154,7 @@ export class Contents {
      * @return {Object} the converted file model
      */
     to_virtual_file(root, file) {
-        file['path'] = to_virtual_path(root, file['path']);
+        file['path'] = this.to_virtual_path(root, file['path']);
         return file;
     }
 
@@ -156,18 +166,18 @@ export class Contents {
      * @return {Object} The converted file list
      */
     to_virtual_list(root, list) {
-        list['content'].forEach($.proxy(to_virtual_file, this, root));
+        list['content'].forEach($.proxy(this.to_virtual_file, this, root));
         return list;
     }
 
 
     to_virtual(root, type, object) {
         if (type === ArgType.PATH) {
-            return to_virtual_path(root, object);
+            return this.to_virtual_path(root, object);
         } else if (type === ArgType.FILE) {
-            return to_virtual_file(root, object);
+            return this.to_virtual_file(root, object);
         } else if (type === ArgType.LIST) {
-            return to_virtual_list(root, object);
+            return this.to_virtual_list(root, object);
         } else {
             return object;
         }
@@ -175,7 +185,7 @@ export class Contents {
 
     from_virtual(root, type, object, config) {
         if (type === ArgType.PATH) {
-            return from_virtual_path(root, object, config);
+            return this.from_virtual_path(root, object, config);
         } else if (type === ArgType.FILE) {
             throw "from_virtual_file not implemented";
         } else if (type === ArgType.LIST) {
@@ -193,28 +203,27 @@ export class Contents {
      * @param {Array} args the arguments to apply
      */
     route_function(method_name, arg_types, return_type, args) {
-        var that = this;
-        return this.filesystem.then(function(filesystem) {
+        return this.filesystem.then((filesystem) => {
             if (arg_types.length == 0 || arg_types[0] != ArgType.PATH) {
                 // This should never happen since arg_types is hard coded below.
                 throw 'unexpected value of arg_types';
             }
-            var root = get_fs_root(filesystem, args[0]);
+            var root = this.get_fs_root(filesystem, args[0]);
 
             if (root === '') {
                 if (method_name === 'list_contents') {
-                  return {'content': virtual_fs_roots(filesystem)};
+                  return {'content': this.virtual_fs_roots(filesystem)};
                 } else {
                   throw 'true root directory only contains mount points.';
                 }
             }
 
             for (var i = 0; i < args.length; i++) {
-                args[i] = from_virtual(root, arg_types[i], args[i], that.config.data['mixed_contents']['schema']);
+                args[i] = this.from_virtual(root, arg_types[i], args[i], this.config.data['mixed_contents']['schema']);
             }
             var contents = filesystem[root];
             return contents[method_name].apply(contents, args).then(
-                $.proxy(to_virtual, this, root, return_type));
+                $.proxy(this.to_virtual, this, root, return_type));
         });
     }
 
