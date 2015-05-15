@@ -5,7 +5,7 @@ import sys
 
 # loaded as a content manager, we can check wether IPython/jupyter is in sys module,
 # then the answer is unambiguous/
-DEFINITIVELY_JUPYTER = 'jupyter_notebook' in sys.modules
+DEFINITIVELY_JUPYTER = 'notebook' in sys.modules
 
 # we might want to check wether this is in an IPython context (ie there is
 # IPython is sys.modules, but then we need to check version)
@@ -29,16 +29,16 @@ else:
     # guess for the best.
     try:
         # if jupyter is installed, assume jupyter
-        import  jupyter_notebook.nbextensions
+        import  notebook.nbextensions
         # silence pyflakes
-        jupyter_notebook.nbextensions
+        notebook.nbextensions
         JUPYTER = True
     except ImportError:
         pass
 
 
 if JUPYTER:
-    import  jupyter_notebook.nbextensions as nbe
+    import  notebook.nbextensions as nbe
 else:
     import IPython.html.nbextensions as nbe
 
