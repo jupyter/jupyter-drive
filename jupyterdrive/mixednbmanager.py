@@ -5,7 +5,7 @@
 from .compat import JUPYTER
 
 if JUPYTER:
-    from jupyter_notebook.services.contents.manager import ContentsManager
+    from notebook.services.contents.manager import ContentsManager
     from traitlets.traitlets import List
     from traitlets import import_item
 else:

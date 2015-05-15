@@ -13,7 +13,7 @@ log.setLevel(20)
 
 
 if JUPYTER:
-    import  jupyter_notebook.nbextensions as nbe
+    import  notebook.nbextensions as nbe
     from IPython.paths import locate_profile
     from IPython.utils.py3compat import cast_unicode_py2
     from jupyter_core.paths import jupyter_config_dir

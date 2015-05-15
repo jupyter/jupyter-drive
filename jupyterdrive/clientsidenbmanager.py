@@ -6,7 +6,7 @@
 from .compat import JUPYTER
 
 if JUPYTER:
-    from jupyter_notebook.services.contents.manager import ContentsManager
+    from notebook.services.contents.manager import ContentsManager
 else:
     from IPython.html.services.contents.manager import ContentsManager
 
