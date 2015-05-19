@@ -71,11 +71,11 @@ Under Jupyter/IPython 4.x+ `<config-dir>/jupyter_notebook_config.json` which by 
     "filesystem_scheme": [
         {
           "root":"local",
-          "contents":"IPython.html.services.contents.filemanager.FileConensManager"
+          "contents":"IPython.html.services.contents.filemanager.FileContentsManager"
         },
         {
           "root": "gdrive",
-          "contents": "jpyerdrive.clientsidenbmanager.ClientSideContentsManager"
+          "contents": "jupyterdrive.clientsidenbmanager.ClientSideContentsManager"
         }
       ]
   }
