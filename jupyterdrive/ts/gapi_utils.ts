@@ -17,7 +17,6 @@ interface LocalWindow extends Window {
 
 declare var window: LocalWindow;
 
-define(function(require) {
 
 
 
@@ -37,7 +36,7 @@ define(function(require) {
      * Google API App ID
      * @type {string}
      */
-    var APP_ID = '763546234320';
+    export var APP_ID = '763546234320';
 
     /**
      * OAuth scope for accessing specific files that have been opened/created
@@ -73,7 +72,7 @@ define(function(require) {
      * @return {Promise} resolved with the contents of the file, or rejected
      *     with an Error.
      */
-    var download = function(url) {
+    export var download = function(url) {
         // Sends request to load file to drive.
         var token = gapi.auth.getToken().access_token;
         var settings = { headers: { 'Authorization': 'Bearer ' + token } };
@@ -121,7 +120,7 @@ define(function(require) {
      * @return {Promise} Fullfilled with the result on success, or the
      *     result wrapped as an Error on error.
      */
-    var execute = function(request) {
+    export var execute = function(request) {
         return new Promise(function(resolve, reject) {
             request.execute(function(result) {
                 resolve(wrap_result(result));
@@ -249,7 +248,7 @@ define(function(require) {
      * calling config with conf, results in the promise _conf_prm being resolved with conf.
      * This then triggers the rest of the gapi loading
      **/
-    var config = function(conf){
+    export var config = function(conf){
       _handle.resolve(conf);
     }
 
@@ -257,20 +256,10 @@ define(function(require) {
      * Promise fullfilled when gapi is loaded, and authorization is complete.
      */
     var load_gapi = load_gapi_1().then(load_gapi_2)
-    var gapi_ready = Promise.all([load_gapi, _conf_prm]).then(
+    export var gapi_ready = Promise.all([load_gapi, _conf_prm]).then(
       function(values){
         var config = values[1];
         return authorize(null, config);
       }
     );
 
-    var drive_utils = {
-        APP_ID : APP_ID,
-        download : download,
-        execute : execute,
-        gapi_ready : gapi_ready,
-        config:config
-    };
-
-    return drive_utils;
-});
