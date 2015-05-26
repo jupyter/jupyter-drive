@@ -77,6 +77,8 @@ class jconfig(object):
     def __exit__( self, type, value, tb ):
         self.config['format'] = 1
         # option to cleanup empty dicts
+        if not os.path.exists(self.pdir):
+            os.mkdir(self.pdir)
         with io.open(os.path.join(self.pdir,self.cff_name),'w', encoding='utf-8') as f:
             f.write(cast_unicode_py2(json.dumps(self.config, indent=2, default=lambda _:{})))
 
