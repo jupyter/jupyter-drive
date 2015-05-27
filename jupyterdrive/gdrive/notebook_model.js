@@ -37,7 +37,7 @@ define(["require", "exports"], function (require, exports) {
          * @param {String} contents The contents of the file, as a string.
          * @return {Object} a JSON representation of the notebook.
          */
-        var notebook_from_file_contents = function (contents) {
+        notebook_model.notebook_from_file_contents = function (contents) {
             var notebook = JSON.parse(contents);
             var unsplit_lines = function (multiline_string) {
                 if (Array.isArray(multiline_string)) {
@@ -55,7 +55,7 @@ define(["require", "exports"], function (require, exports) {
          * @param {Object} notebook a JSON representation of the notebook.
          * @return {Object} The JSON representation with lines split.
          */
-        var file_contents_from_notebook = function (notebook) {
+        notebook_model.file_contents_from_notebook = function (notebook) {
             var notebook_copy = JSON.parse(JSON.stringify(notebook));
             var split_lines = function (obj) {
                 if (typeof (obj) !== 'string') {
@@ -78,7 +78,7 @@ define(["require", "exports"], function (require, exports) {
          * @param {string} name Notebook name
          * @return {Object} JSON representation of a new notebook.
          */
-        var new_notebook = function () {
+        notebook_model.new_notebook = function () {
             return {
                 'cells': [{
                     'cell_type': 'code',
