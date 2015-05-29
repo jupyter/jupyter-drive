@@ -1,0 +1,25 @@
+{
+  "name": "jupyter-drive",
+  "version": "1.0.0",
+  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jupyter/jupyter-drive.git"
+  },
+  "author": "Matthias Bussonnier",
+  "license": "BSD",
+  "bugs": {
+    "url": "https://github.com/jupyter/jupyter-drive/issues"
+  },
+  "homepage": "https://github.com/jupyter/jupyter-drive",
+  "devDependencies": {
+    "del": "^0.1.3",
+    "event-stream": "^3.1.7",
+    "gulp": "^3.8.9",
+    "gulp-typescript": "2.4.2",
+    "gulp-watch": "^4.2.4",
+    "merge2": "^0.3.5",
+    "tsd": "^0.5.7",
+    "typescript": "^1.5.0-beta"
+  }
+}

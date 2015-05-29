@@ -9,7 +9,7 @@ define(function(require) {
     var dialog = require('base/js/dialog');
     var gapi_utils = require('./gapi_utils');
     var drive_utils = require('./drive_utils');
-    var notebook_model = require('./notebook_model');
+    var notebook_model = require('./notebook_model').notebook_model;
 
     var Contents = function(options) {
         // Constructor
