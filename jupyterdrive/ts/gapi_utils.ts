@@ -7,6 +7,7 @@ import dialog = require('base/js/dialog');
 import utils = require('base/js/utils');
 
 declare var gapi:any;
+declare var Promise:any;
 
 
 interface LocalWindow extends Window {
@@ -17,6 +18,7 @@ interface LocalWindow extends Window {
 
 declare var window: LocalWindow;
 
+export module gapi_utils {
 
 
 
@@ -262,4 +264,4 @@ declare var window: LocalWindow;
         return authorize(null, config);
       }
     );
-
+}

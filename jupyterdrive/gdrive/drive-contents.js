@@ -7,7 +7,7 @@ define(function(require) {
     var $ = require('jquery');
     var utils = require('base/js/utils');
     var dialog = require('base/js/dialog');
-    var gapi_utils = require('./gapi_utils');
+    var gapi_utils = require('./gapi_utils').gapi_utils;
     var drive_utils = require('./drive_utils');
     var notebook_model = require('./notebook_model').notebook_model;
 
