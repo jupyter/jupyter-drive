@@ -1,6 +1,6 @@
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
-define(["require", "exports", 'jquery', './gapi_utils'], function (require, exports, $, gapi_utils) {
+define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], function (require, exports, $, gapiutils, pickerutils) {
     exports.FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
     exports.NOTEBOOK_MIMETYPE = 'application/ipynb';
     exports.MULTIPART_BOUNDARY = '-------314159265358979323846';
@@ -37,7 +37,7 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
             query += ' and \'' + folder_id + '\' in parents';
             request = gapi.client.drive.files.list({ 'q': query });
         }
-        return gapi_utils.gapi_utils.execute(request).then(function (response) {
+        return gapiutils.execute(request).then(function (response) {
             var files = response['items'];
             if (!files || files.length == 0) {
                 var error = new Error('The specified file/folder did not exist: ' + path_component);
@@ -74,10 +74,10 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
     exports.get_resource_for_path = function (path, type) {
         var components = exports.split_path(path);
         if (components.length == 0) {
-            return gapi_utils.gapi_utils.execute(gapi.client.drive.about.get()).then(function (resource) {
+            return gapiutils.execute(gapi.client.drive.about.get()).then(function (resource) {
                 var id = resource['rootFolderId'];
                 var request = gapi.client.drive.files.get({ 'fileId': id });
-                return gapi_utils.gapi_utils.execute(request);
+                return gapiutils.execute(request);
             });
         }
         var result = Promise.resolve({ id: 'root' });
@@ -85,10 +85,10 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
             var component = components[i];
             var t = (i == components.length - 1) ? type : exports.FileType.FOLDER;
             var child_resource = i < components.length - 1;
-            result = result.then(function (resource) {
+            var r2 = result.then(function (resource) {
                 return resource['id'];
             });
-            result = result.then($.proxy(exports.get_resource_for_relative_path, this, component, t, child_resource));
+            r2 = r2.then($.proxy(exports.get_resource_for_relative_path, this, component, t, child_resource));
         }
         ;
         return result;
@@ -137,7 +137,7 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
             'q': query
         });
         var fallbackFilename = base_name + ext;
-        return gapi_utils.gapi_utils.execute(request).then(function (response) {
+        return gapiutils.execute(request).then(function (response) {
             // Use 'Untitled.ipynb' as a fallback in case of error
             var files = response['items'] || [];
             var existingFilenames = $.map(files, function (filesResource) {
@@ -205,7 +205,7 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
             },
             'body': body
         });
-        return gapi_utils.gapi_utils.execute(request);
+        return gapiutils.execute(request);
     };
     exports.GET_CONTENTS_INITIAL_DELAY = 200; // 200 ms
     exports.GET_CONTENTS_MAX_TRIES = 5;
@@ -222,14 +222,14 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
      */
     exports.get_contents = function (resource, already_picked, opt_num_tries) {
         if (resource['downloadUrl']) {
-            return gapi_utils.gapi_utils.download(resource['downloadUrl']);
+            return gapiutils.download(resource['downloadUrl']);
         }
         else if (already_picked) {
             if (opt_num_tries == 0) {
                 return Promise.reject(new Error('Max retries of file load reached'));
             }
             var request = gapi.client.drive.files.get({ 'fileId': resource['id'] });
-            var reply = gapi_utils.gapi_utils.execute(request);
+            var reply = gapiutils.execute(request);
             var delay = exports.GET_CONTENTS_INITIAL_DELAY * Math.pow(exports.GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR, exports.GET_CONTENTS_MAX_TRIES - opt_num_tries);
             var delayed_reply = new Promise(function (resolve, reject) {
                 window.setTimeout(function () {
@@ -246,7 +246,7 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
             // the user to open a FilePicker window that allows them to indicate
             // to Google Drive that they intend to open that file with this
             // app.
-            return picker_utils.pick_file(resource.parents[0]['id'], resource['title']).then(function () {
+            return pickerutils.pick_file(resource.parents[0]['id'], resource['title']).then(function () {
                 return exports.get_contents(resource, true, exports.GET_CONTENTS_MAX_TRIES);
             });
         }
@@ -261,24 +261,11 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
     exports.set_user_info = function (selector) {
         selector = selector || '#header-container';
         var request = gapi.client.drive.about.get();
-        return gapi_utils.gapi_utils.execute(request).then(function (result) {
+        return gapiutils.execute(request).then(function (result) {
             var user = result.user;
             var image = $('<img/>').attr('src', result.user.picture.url).addClass('pull-right').css('border-radius', '32px').css('width', '32px').css('margin-top', '-1px').css('margin-bottom', '-1px');
             image.attr('title', 'Logged in to Google Drive as ' + user.displayName);
             $('#header-container').prepend($('<span/>').append(image));
         });
-    };
-    exports.drive_utils = {
-        FOLDER_MIME_TYPE: exports.FOLDER_MIME_TYPE,
-        NOTEBOOK_MIMETYPE: exports.NOTEBOOK_MIMETYPE,
-        FileType: exports.FileType,
-        split_path: exports.split_path,
-        get_id_for_path: exports.get_id_for_path,
-        get_resource_for_relative_path: exports.get_resource_for_relative_path,
-        get_resource_for_path: exports.get_resource_for_path,
-        get_new_filename: exports.get_new_filename,
-        upload_to_drive: exports.upload_to_drive,
-        get_contents: exports.get_contents,
-        set_user_info: exports.set_user_info
     };
 });

@@ -3,8 +3,8 @@
 
 import IPython =    require('base/js/namespace');
 import $ =     require('jquery');
-import gapi_utils = require('gapi_utils');
-import picker_utils = require('picker_utils');
+import gapiutils = require('./gapiutils');
+import pickerutils = require('./pickerutils');
 
 export var FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
 
@@ -48,7 +48,7 @@ export var get_resource_for_relative_path = function(path_component, type, opt_c
             query += ' and \'' + folder_id + '\' in parents';
             request = gapi.client.drive.files.list({'q': query});
         }
-        return gapi_utils._execute(request)
+        return gapiutils.execute(request)
         .then(function(response) {
             var files = response['items'];
             if (!files || files.length == 0) {
@@ -88,11 +88,11 @@ export var split_path = function(path) {
 export var get_resource_for_path = function(path, type) {
         var components = split_path(path);
         if (components.length == 0) {
-            return gapi_utils._execute(gapi.client.drive.about.get())
+            return gapiutils.execute(gapi.client.drive.about.get())
             .then(function(resource) {
                 var id = resource['rootFolderId'];
                 var request = gapi.client.drive.files.get({ 'fileId': id });
-                return gapi_utils._execute(request);
+                return gapiutils.execute(request);
             });
         }
         var result = Promise.resolve({id: 'root'});
@@ -100,8 +100,8 @@ export var get_resource_for_path = function(path, type) {
             var component = components[i];
             var t = (i == components.length - 1) ? type : FileType.FOLDER;
             var child_resource = i < components.length - 1;
-            result = result.then(function(resource) { return resource['id']; });
-            result = result.then($.proxy(get_resource_for_relative_path, this,
+            var r2 = result.then(function(resource) { return resource['id']; });
+            r2 = r2.then($.proxy(get_resource_for_relative_path, this,
                                          component, t, child_resource));
         };
         return result;
@@ -157,7 +157,7 @@ export var get_new_filename = function(opt_folderId, ext, base_name) {
         });
 
         var fallbackFilename = base_name + ext;
-        return gapi_utils._execute(request)
+        return gapiutils.execute(request)
         .then(function(response) {
             // Use 'Untitled.ipynb' as a fallback in case of error
             var files = response['items'] || [];
@@ -240,7 +240,7 @@ export var upload_to_drive = function(data, metadata, opt_fileId, opt_params) {
             },
             'body': body
         });
-        return gapi_utils._execute(request);
+        return gapiutils.execute(request);
     };
 
 export var GET_CONTENTS_INITIAL_DELAY = 200;  // 200 ms
@@ -259,13 +259,13 @@ export var GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR = 2.0;
      */
 export var get_contents = function(resource, already_picked, opt_num_tries) {
         if (resource['downloadUrl']) {
-            return gapi_utils.download(resource['downloadUrl']);
+            return gapiutils.download(resource['downloadUrl']);
         } else if (already_picked) {
             if (opt_num_tries == 0) {
               return Promise.reject(new Error('Max retries of file load reached'));
             }
             var request = gapi.client.drive.files.get({ 'fileId': resource['id'] });
-            var reply = gapi_utils._execute(request);
+            var reply = gapiutils.execute(request);
             var delay = GET_CONTENTS_INITIAL_DELAY *
                 Math.pow(GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR, GET_CONTENTS_MAX_TRIES - opt_num_tries);
             var delayed_reply = new Promise(function(resolve, reject) {
@@ -282,7 +282,7 @@ export var get_contents = function(resource, already_picked, opt_num_tries) {
             // the user to open a FilePicker window that allows them to indicate
             // to Google Drive that they intend to open that file with this
             // app.
-	    return picker_utils.pick_file(resource.parents[0]['id'], resource['title'])
+	    return pickerutils.pick_file(resource.parents[0]['id'], resource['title'])
                 .then(function() {
                   return get_contents(resource, true, GET_CONTENTS_MAX_TRIES);
                 });
@@ -299,7 +299,7 @@ export var get_contents = function(resource, already_picked, opt_num_tries) {
 export var set_user_info = function(selector){
         selector = selector || '#header-container';
         var request = gapi.client.drive.about.get()
-        return gapi_utils._execute(request).then(function(result){
+        return gapiutils.execute(request).then(function(result){
             var user = result.user;
             var image = $('<img/>').attr('src', result.user.picture.url)
                                    .addClass('pull-right')

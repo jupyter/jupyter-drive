@@ -7,7 +7,7 @@ define(function(require) {
     var $ = require('jquery');
     var utils = require('base/js/utils');
     var dialog = require('base/js/dialog');
-    var gapi_utils = require('./gapi_utils').gapi_utils;
+    var gapiutils = require('./gapiutils');
     var drive_utils = require('./drive_utils');
     var notebook_model = require('./notebook_model').notebook_model;
 
@@ -31,8 +31,8 @@ define(function(require) {
         this.last_observed_revision = {};
         var that = this;
         this.config.loaded.then(function(data){
-          gapi_utils.config(that.config);
-          gapi_utils.gapi_ready.then(drive_utils.set_user_info);
+          gapiutils.config(that.config);
+          gapiutils.gapi_ready.then(drive_utils.set_user_info);
         })
 
     };
@@ -195,7 +195,7 @@ define(function(require) {
         metadata['parents'] = [{'id' : folder_id}];
 
         if (model['type'] === 'directory') {
-            return gapi_utils.execute(gapi.client.drive.files.insert({'resource': metadata}));
+            return gapiutils.execute(gapi.client.drive.files.insert({'resource': metadata}));
         } else {
             return drive_utils.upload_to_drive(contents, metadata);
         }
@@ -218,7 +218,7 @@ define(function(require) {
      */
     Contents.prototype.get = function (path, options) {
         var that = this;
-        var metadata_prm = gapi_utils.gapi_ready.then(
+        var metadata_prm = gapiutils.gapi_ready.then(
             $.proxy(drive_utils.get_resource_for_path, this, path, drive_utils.FileType.FILE));
         var contents_prm = metadata_prm.then(function(resource) {
             that.observe_file_resource(resource);
@@ -278,7 +278,7 @@ define(function(require) {
         }
 
         var that = this;
-        var folder_id_prm = gapi_utils.gapi_ready
+        var folder_id_prm = gapiutils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.Folder))
         var filename_prm = folder_id_prm.then(function(resource){
             return drive_utils.get_new_filename(resource, options['ext'] || default_ext, base_name);
@@ -296,12 +296,12 @@ define(function(require) {
     };
 
     Contents.prototype.delete = function(path) {
-        return gapi_utils.gapi_ready
+        return gapiutils.gapi_ready
         .then(function() {
             return drive_utils.get_id_for_path(path, drive_utils.FileType.FILE);
         })
         .then(function(file_id){
-            return gapi_utils.execute(gapi.client.drive.files.delete({'fileId': file_id}));
+            return gapiutils.execute(gapi.client.drive.files.delete({'fileId': file_id}));
         });
     };
 
@@ -332,7 +332,7 @@ define(function(require) {
             }
         }
 
-        return gapi_utils.gapi_ready
+        return gapiutils.gapi_ready
         .then(function() {
             return drive_utils.get_id_for_path(path)
         })
@@ -342,7 +342,7 @@ define(function(require) {
                 'fileId': file_id,
                 'resource': body
             });
-            return gapi_utils.execute(request);
+            return gapiutils.execute(request);
         })
         .then(function(resource) {
             that.observe_file_resource(resource);
@@ -394,7 +394,7 @@ define(function(require) {
     // save
     Contents.prototype.create_checkpoint = function(path, options) {
         var that = this;
-        return gapi_utils.gapi_ready
+        return gapiutils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FILE))
         .then(function(file_id) {
             var revision_id = that.last_observed_revision[file_id];
@@ -407,7 +407,7 @@ define(function(require) {
                 'revisionId': revision_id,
                 'resource': body
             });
-            return gapi_utils.execute(request);
+            return gapiutils.execute(request);
         })
         .then(function(item) {
             return {
@@ -419,7 +419,7 @@ define(function(require) {
     };
 
     Contents.prototype.restore_checkpoint = function(path, checkpoint_id, options) {
-        var file_id_prm = gapi_utils.gapi_ready
+        var file_id_prm = gapiutils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FILE))
 
         var contents_prm = file_id_prm.then(function(file_id) {
@@ -427,10 +427,10 @@ define(function(require) {
                 'fileId': file_id,
                 'revisionId': checkpoint_id
             });
-            return gapi_utils.execute(request);
+            return gapiutils.execute(request);
         })
         .then(function(response) {
-            return gapi_utils.download(response['downloadUrl']);
+            return gapiutils.download(response['downloadUrl']);
         })
 
         return Promise.all([file_id_prm, contents_prm])
@@ -442,11 +442,11 @@ define(function(require) {
     };
 
     Contents.prototype.list_checkpoints = function(path, options) {
-        return gapi_utils.gapi_ready
+        return gapiutils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FILE))
         .then(function(file_id) {
             var request = gapi.client.drive.revisions.list({'fileId': file_id });
-            return gapi_utils.execute(request);
+            return gapiutils.execute(request);
         })
         .then(function(response) {
             return response['items']
@@ -484,7 +484,7 @@ define(function(require) {
      */
     Contents.prototype.list_contents = function(path, options) {
         var that = this;
-        return gapi_utils.gapi_ready
+        return gapiutils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FOLDER))
         .then(function(folder_id) {
             // Gets contents of the folder 1000 items at a time.  Google Drive
@@ -506,7 +506,7 @@ define(function(require) {
                     params['pageToken'] = page_token;
                 };
                 var request = gapi.client.drive.files.list(params)
-                return gapi_utils.execute(request)
+                return gapiutils.execute(request)
                 .then(function(response) {
                     var combined_items = items.concat(response['items']);
                     var next_page_token = response['nextPageToken'];
