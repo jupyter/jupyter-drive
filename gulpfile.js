@@ -13,11 +13,16 @@ var tsProject = ts.createProject({
 
 gulp.task('watch', ['js'], function() {
     gulp.watch('jupyterdrive/ts/*.ts', ['js']);
+    gulp.watch('jupyterdrive/js/*.js', ['js']);
     gulp.watch('typings/*/*.ts', ['js']);
     gulp.watch('gulpfile.js', ['js']);
 });
 
 gulp.task('js', function() {
+    var jsResult = gulp.src([
+                                'jupyterdrive/js/*.js',
+        
+    ]).pipe(gulp.dest('jupyterdrive/gdrive'))
     var tsResult = gulp.src([
                                 'jupyterdrive/ts/*.ts',
                                 'typings/*.d.ts',
