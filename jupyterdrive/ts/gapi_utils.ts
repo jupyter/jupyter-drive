@@ -31,14 +31,14 @@ declare var window: LocalWindow;
         APP_ID : '763546234320',
         FILE_SCOPE : true,
         METADATA_SCOPE : true,
-    }
+    };
 
 
     /**
      * Google API App ID
      * @type {string}
      */
-    export var APP_ID = '763546234320';
+    export var APP_ID:string = '763546234320';
 
     /**
      * OAuth scope for accessing specific files that have been opened/created
@@ -264,4 +264,4 @@ declare var window: LocalWindow;
         return authorize(null, config);
       }
     );
-// }
+//}

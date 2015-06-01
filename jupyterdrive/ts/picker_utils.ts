@@ -1,7 +1,7 @@
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
 
-import gapi_utils = require('./gapi_utils');
+import gapi_utils = require('gapi_utils');
 declare var Promise;
 declare var google:any;
 declare var gapi:any;
@@ -19,7 +19,7 @@ export module picker_utils {
      * @param {Promise} a Promise resolved when user selects file, or rejected if
      *     they cancel.
      */
-    export var pick_file = function(parent_id, filename) {
+    export function pick_file(parent_id, filename):any {
         return new Promise(function(resolve, reject) {
             var callback = function(response) {
                 if (response['action'] == google.picker.Action.CANCEL) {
@@ -41,7 +41,7 @@ export module picker_utils {
             var picker = builder
                 .addView(search_view)
                 .setOAuthToken(gapi.auth.getToken()['access_token'])
-                .setAppId(gapi_utils.gapi_utils.APP_ID)
+                .setAppId(gapi_utils.APP_ID)
                 .setCallback(callback)
                 .build();
 
