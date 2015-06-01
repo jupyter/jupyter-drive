@@ -18,7 +18,7 @@ interface LocalWindow extends Window {
 
 declare var window: LocalWindow;
 
-export module gapi_utils {
+// export module gapi_utils {
 
 
 
@@ -122,7 +122,7 @@ export module gapi_utils {
      * @return {Promise} Fullfilled with the result on success, or the
      *     result wrapped as an Error on error.
      */
-    export var execute = function(request) {
+    export var _execute = function(request) {
         return new Promise(function(resolve, reject) {
             request.execute(function(result) {
                 resolve(wrap_result(result));
@@ -264,4 +264,4 @@ export module gapi_utils {
         return authorize(null, config);
       }
     );
-}
+// }

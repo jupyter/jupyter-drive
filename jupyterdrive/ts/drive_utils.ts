@@ -1,14 +1,26 @@
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
-define(["require", "exports", 'jquery', './gapi_utils'], function (require, exports, $, gapi_utils) {
-    exports.FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
-    exports.NOTEBOOK_MIMETYPE = 'application/ipynb';
-    exports.MULTIPART_BOUNDARY = '-------314159265358979323846';
+
+import IPython =    require('base/js/namespace');
+import $ =     require('jquery');
+import gapi_utils = require('gapi_utils');
+import picker_utils = require('picker_utils');
+
+export var FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
+
+export var NOTEBOOK_MIMETYPE = 'application/ipynb';
+
+export var MULTIPART_BOUNDARY = '-------314159265358979323846';
+
+declare var gapi;
+
     /** Enum for file types */
-    exports.FileType = {
-        FILE: 1,
+export var FileType = {
+        FILE : 1,
         FOLDER: 2
     };
+
+
     /**
      * Obtains the Google Drive Files resource for a file or folder relative
      * to the a given folder.  The path should be a file or a subfolder, and
@@ -24,20 +36,20 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
      * @return A promise fullfilled by either the files resource for the given
      *     file/folder, or rejected with an Error object.
      */
-    exports.get_resource_for_relative_path = function (path_component, type, opt_child_resource, folder_id) {
+export var get_resource_for_relative_path = function(path_component, type, opt_child_resource, folder_id) {
         var query = 'title = \'' + path_component + '\' and trashed = false ';
-        if (type == exports.FileType.FOLDER) {
-            query += ' and mimeType = \'' + exports.FOLDER_MIME_TYPE + '\'';
+        if (type == FileType.FOLDER) {
+            query += ' and mimeType = \'' + FOLDER_MIME_TYPE + '\'';
         }
         var request = null;
         if (opt_child_resource) {
-            request = gapi.client.drive.children.list({ 'q': query, 'folderId': folder_id });
-        }
-        else {
+            request = gapi.client.drive.children.list({'q': query, 'folderId' : folder_id});
+        } else {
             query += ' and \'' + folder_id + '\' in parents';
-            request = gapi.client.drive.files.list({ 'q': query });
+            request = gapi.client.drive.files.list({'q': query});
         }
-        return gapi_utils.gapi_utils.execute(request).then(function (response) {
+        return gapi_utils._execute(request)
+        .then(function(response) {
             var files = response['items'];
             if (!files || files.length == 0) {
                 var error = new Error('The specified file/folder did not exist: ' + path_component);
@@ -52,14 +64,16 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
             return files[0];
         });
     };
+
+
     /**
      * Split a path into path components
      */
-    exports.split_path = function (path) {
-        return path.split('/').filter(function (c) {
-            return c;
-        });
+export var split_path = function(path) {
+        return path.split('/').filter(function(c) { return c;});
     };
+
+
     /**
      * Gets the Google Drive Files resource corresponding to a path.  The path
      * is always treated as an absolute path, no matter whether it contains
@@ -71,28 +85,29 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
      * @return {Promise} fullfilled with file/folder id (string) on success
      *     or Error object on error.
      */
-    exports.get_resource_for_path = function (path, type) {
-        var components = exports.split_path(path);
+export var get_resource_for_path = function(path, type) {
+        var components = split_path(path);
         if (components.length == 0) {
-            return gapi_utils.gapi_utils.execute(gapi.client.drive.about.get()).then(function (resource) {
+            return gapi_utils._execute(gapi.client.drive.about.get())
+            .then(function(resource) {
                 var id = resource['rootFolderId'];
                 var request = gapi.client.drive.files.get({ 'fileId': id });
-                return gapi_utils.gapi_utils.execute(request);
+                return gapi_utils._execute(request);
             });
         }
-        var result = Promise.resolve({ id: 'root' });
+        var result = Promise.resolve({id: 'root'});
         for (var i = 0; i < components.length; i++) {
             var component = components[i];
-            var t = (i == components.length - 1) ? type : exports.FileType.FOLDER;
+            var t = (i == components.length - 1) ? type : FileType.FOLDER;
             var child_resource = i < components.length - 1;
-            result = result.then(function (resource) {
-                return resource['id'];
-            });
-            result = result.then($.proxy(exports.get_resource_for_relative_path, this, component, t, child_resource));
-        }
-        ;
+            result = result.then(function(resource) { return resource['id']; });
+            result = result.then($.proxy(get_resource_for_relative_path, this,
+                                         component, t, child_resource));
+        };
         return result;
-    };
+    }
+
+
     /**
      * Gets the Google Drive file/folder ID for a file or folder.  The path is
      * always treated as an absolute path, no matter whether it contains leading
@@ -104,15 +119,16 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
      * @return {Promise} fullfilled with folder id (string) on success
      *     or Error object on error.
      */
-    exports.get_id_for_path = function (path, type) {
-        var components = exports.split_path(path);
+export var get_id_for_path = function(path, type) {
+        var components = split_path(path);
         if (components.length == 0) {
             return $.Deferred().resolve('root');
         }
-        return exports.get_resource_for_path(path, type).then(function (resource) {
-            return resource['id'];
-        });
-    };
+        return get_resource_for_path(path, type)
+            .then(function(resource) { return resource['id']; });
+    }
+
+
     /**
      * Obtains the filename that should be used for a new file in a given
      * folder.  This is the next file in the series Untitled0, Untitled1, ... in
@@ -127,22 +143,33 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
      * @return A promise fullfilled with the new filename.  In case of errors,
      *     'Untitled.ipynb' is used as a fallback.
      */
-    exports.get_new_filename = function (opt_folderId, ext, base_name) {
+export var get_new_filename = function(opt_folderId, ext, base_name) {
         /** @type {string} */
         var folderId = opt_folderId || 'root';
-        var query = 'title contains \'' + base_name + '\'' + ' and \'' + folderId + '\' in parents' + ' and trashed = false';
+
+        var query = 'title contains \'' + base_name + '\'' +
+            ' and \'' + folderId + '\' in parents' +
+            ' and trashed = false';
         var request = gapi.client.drive.files.list({
             'maxResults': 1000,
-            'folderId': folderId,
+            'folderId' : folderId,
             'q': query
         });
+
         var fallbackFilename = base_name + ext;
-        return gapi_utils.gapi_utils.execute(request).then(function (response) {
+        return gapi_utils._execute(request)
+        .then(function(response) {
             // Use 'Untitled.ipynb' as a fallback in case of error
             var files = response['items'] || [];
-            var existingFilenames = $.map(files, function (filesResource) {
+            var existingFilenames = $.map(files, function(filesResource) {
                 return filesResource['title'];
             });
+
+            // Loop over file names Untitled0, ... , UntitledN where N is the number of
+            // elements in existingFilenames.  Select the first file name that does not
+            // belong to existingFilenames.  This is guaranteed to find a file name
+            // that does not belong to existingFilenames, since there are N + 1 file
+            // names tried, and existingFilenames contains N elements.
             for (var i = 0; i <= existingFilenames.length; i++) {
                 /** @type {string} */
                 var filename = base_name + i + ext;
@@ -150,12 +177,14 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
                     return filename;
                 }
             }
+
             // Control should not reach this point, so an error has occured
             return fallbackFilename;
-        }).catch(function (error) {
-            return Promise.resolve(fallbackFilename);
-        });
+        })
+        .catch(function(error) { return Promise.resolve(fallbackFilename); });
     };
+
+
     /**
      * Uploads a notebook to Drive, either creating a new one or saving an
      * existing one.
@@ -169,11 +198,12 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
      * @return {Promise} A promise resolved with the Google Drive Files
      *     resource for the uploaded file, or rejected with an Error object.
      */
-    exports.upload_to_drive = function (data, metadata, opt_fileId, opt_params) {
+export var upload_to_drive = function(data, metadata, opt_fileId, opt_params) {
         var params = opt_params || {};
-        var delimiter = '\r\n--' + exports.MULTIPART_BOUNDARY + '\r\n';
-        var close_delim = '\r\n--' + exports.MULTIPART_BOUNDARY + '--';
-        var body = delimiter + 'Content-Type: application/json\r\n\r\n';
+        var delimiter = '\r\n--' + MULTIPART_BOUNDARY + '\r\n';
+        var close_delim = '\r\n--' + MULTIPART_BOUNDARY + '--';
+        var body = delimiter +
+            'Content-Type: application/json\r\n\r\n';
         var mime;
         if (metadata) {
             mime = metadata.mimeType;
@@ -186,30 +216,37 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
                 body += 'Content-Transfer-Encoding: base64\r\n';
             }
         }
-        body += '\r\n' + data + close_delim;
+        body +='\r\n' +
+            data +
+            close_delim;
+
         var path = '/upload/drive/v2/files';
         var method = 'POST';
         if (opt_fileId) {
             path += '/' + opt_fileId;
             method = 'PUT';
         }
+
         var request = gapi.client.request({
             'path': path,
             'method': method,
             'params': {
                 'uploadType': 'multipart',
-                'pinned': params['pinned']
+                'pinned' : params['pinned']
             },
             'headers': {
-                'Content-Type': 'multipart/mixed; boundary="' + exports.MULTIPART_BOUNDARY + '"'
+                'Content-Type': 'multipart/mixed; boundary="' +
+                MULTIPART_BOUNDARY + '"'
             },
             'body': body
         });
-        return gapi_utils.gapi_utils.execute(request);
+        return gapi_utils._execute(request);
     };
-    exports.GET_CONTENTS_INITIAL_DELAY = 200; // 200 ms
-    exports.GET_CONTENTS_MAX_TRIES = 5;
-    exports.GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR = 2.0;
+
+export var GET_CONTENTS_INITIAL_DELAY = 200;  // 200 ms
+export var GET_CONTENTS_MAX_TRIES = 5;
+export var GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR = 2.0;
+
     /**
      * Attempt to get the contents of a file with the given id.  This may
      * involve requesting the user to open the file in a FilePicker.
@@ -220,37 +257,38 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
      *     Should be set when already_picked is true.
      * @return {Promise} A promise fullfilled by file contents.
      */
-    exports.get_contents = function (resource, already_picked, opt_num_tries) {
+export var get_contents = function(resource, already_picked, opt_num_tries) {
         if (resource['downloadUrl']) {
-            return gapi_utils.gapi_utils.download(resource['downloadUrl']);
-        }
-        else if (already_picked) {
+            return gapi_utils.download(resource['downloadUrl']);
+        } else if (already_picked) {
             if (opt_num_tries == 0) {
-                return Promise.reject(new Error('Max retries of file load reached'));
+              return Promise.reject(new Error('Max retries of file load reached'));
             }
             var request = gapi.client.drive.files.get({ 'fileId': resource['id'] });
-            var reply = gapi_utils.gapi_utils.execute(request);
-            var delay = exports.GET_CONTENTS_INITIAL_DELAY * Math.pow(exports.GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR, exports.GET_CONTENTS_MAX_TRIES - opt_num_tries);
-            var delayed_reply = new Promise(function (resolve, reject) {
-                window.setTimeout(function () {
+            var reply = gapi_utils._execute(request);
+            var delay = GET_CONTENTS_INITIAL_DELAY *
+                Math.pow(GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR, GET_CONTENTS_MAX_TRIES - opt_num_tries);
+            var delayed_reply = new Promise(function(resolve, reject) {
+                window.setTimeout(function() {
                     resolve(reply);
                 }, delay);
             });
-            return delayed_reply.then(function (new_resource) {
-                return exports.get_contents(new_resource, true, opt_num_tries - 1);
+            return delayed_reply.then(function(new_resource) {
+                return get_contents(new_resource, true, opt_num_tries - 1);
             });
-        }
-        else {
+        } else {
             // If downloadUrl field is missing, this means that we do not have
             // access to the file using drive.file scope.  Therefore we prompt
             // the user to open a FilePicker window that allows them to indicate
             // to Google Drive that they intend to open that file with this
             // app.
-            return picker_utils.pick_file(resource.parents[0]['id'], resource['title']).then(function () {
-                return exports.get_contents(resource, true, exports.GET_CONTENTS_MAX_TRIES);
-            });
+	    return picker_utils.pick_file(resource.parents[0]['id'], resource['title'])
+                .then(function() {
+                  return get_contents(resource, true, GET_CONTENTS_MAX_TRIES);
+                });
         }
     };
+
     /**
      * Fetch user avatar url and put it in the header
      * optionally take a selector into which to insert the img tag
@@ -258,27 +296,20 @@ define(["require", "exports", 'jquery', './gapi_utils'], function (require, expo
      *
      *
      **/
-    exports.set_user_info = function (selector) {
+export var set_user_info = function(selector){
         selector = selector || '#header-container';
-        var request = gapi.client.drive.about.get();
-        return gapi_utils.gapi_utils.execute(request).then(function (result) {
+        var request = gapi.client.drive.about.get()
+        return gapi_utils._execute(request).then(function(result){
             var user = result.user;
-            var image = $('<img/>').attr('src', result.user.picture.url).addClass('pull-right').css('border-radius', '32px').css('width', '32px').css('margin-top', '-1px').css('margin-bottom', '-1px');
-            image.attr('title', 'Logged in to Google Drive as ' + user.displayName);
+            var image = $('<img/>').attr('src', result.user.picture.url)
+                                   .addClass('pull-right')
+                                   .css('border-radius','32px')
+                                   .css('width','32px')
+                                   .css('margin-top','-1px')
+                                   .css('margin-bottom','-1px');
+            image.attr('title', 'Logged in to Google Drive as '+user.displayName);
             $('#header-container').prepend($('<span/>').append(image));
-        });
-    };
-    exports.drive_utils = {
-        FOLDER_MIME_TYPE: exports.FOLDER_MIME_TYPE,
-        NOTEBOOK_MIMETYPE: exports.NOTEBOOK_MIMETYPE,
-        FileType: exports.FileType,
-        split_path: exports.split_path,
-        get_id_for_path: exports.get_id_for_path,
-        get_resource_for_relative_path: exports.get_resource_for_relative_path,
-        get_resource_for_path: exports.get_resource_for_path,
-        get_new_filename: exports.get_new_filename,
-        upload_to_drive: exports.upload_to_drive,
-        get_contents: exports.get_contents,
-        set_user_info: exports.set_user_info
-    };
-});
+        })
+    }
+
+
