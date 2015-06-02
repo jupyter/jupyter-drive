@@ -30,7 +30,7 @@ var _default = {"schema":
       {
           "root": "gdrive",
           "stripjs": true,
-          "contents": "nbextension/gdrive/drive-contents"
+          "contents": "./drive-contents"
       }
   ]
 };
@@ -72,12 +72,9 @@ export class Contents {
           var schema = (local_config||_default)['schema'];
           return Promise.all(
                 schema.map(function(fs) {
-                console.log('fs:', fs, local_config)
                 return new Promise(function(resolve, reject) {
 
                     require([fs['contents']], function(contents) {
-                        console.warn('contents module is:', contents  , 'fs:', fs['contents'])
-                        console.warn('Contents is:', contents.Contents)
                         resolve({
                           'root': fs['root'],
                          'contents': new contents.Contents(options)
