@@ -98,7 +98,7 @@ var files_resource_to_contents_model = function(path, resource, content?) {
     };
 };
 
-export class Content { 
+export class Contents { 
 
     base_url:string;
     config:any;

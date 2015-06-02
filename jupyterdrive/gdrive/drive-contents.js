@@ -88,8 +88,8 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
             writable: resource['editable']
         };
     };
-    var Content = (function () {
-        function Content(options) {
+    var Contents = (function () {
+        function Contents(options) {
             // Constructor
             //
             // A contentmanager handles passing file operations
@@ -126,7 +126,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          *
          * @param {resource} resource_prm a Google Drive file resource.
          */
-        Content.prototype.observe_file_resource = function (resource) {
+        Contents.prototype.observe_file_resource = function (resource) {
             this.last_observed_revision[resource['id']] = resource['headRevisionId'];
         };
         /**
@@ -135,7 +135,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          * @param {Object} model The IPython model object to be saved
          * @return {Promise} A promise fullfilled with the resource of the saved file.
          */
-        Content.prototype.save_existing = function (resource, model) {
+        Contents.prototype.save_existing = function (resource, model) {
             var that = this;
             var converted = contents_model_to_metadata_and_bytes(model);
             var contents = converted[1];
@@ -172,7 +172,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          * @param {Object} model The IPython model object to be saved
          * @return {Promise} A promise fullfilled with the resource of the saved file.
          */
-        Content.prototype.upload_new = function (folder_id, model) {
+        Contents.prototype.upload_new = function (folder_id, model) {
             var that = this;
             var converted = contents_model_to_metadata_and_bytes(model);
             var metadata = converted[0];
@@ -199,7 +199,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          * @param {String} name
          * @param {Object} options
          */
-        Content.prototype.get = function (path, options) {
+        Contents.prototype.get = function (path, options) {
             var that = this;
             var metadata_prm = gapiutils.gapi_ready.then($.proxy(driveutils.get_resource_for_path, this, path, driveutils.FileType.FILE));
             var contents_prm = metadata_prm.then(function (resource) {
@@ -222,7 +222,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          *      ext: file extension to use
          *      type: model type to create ('notebook', 'file', or 'directory')
          */
-        Content.prototype.new_untitled = function (path, options) {
+        Contents.prototype.new_untitled = function (path, options) {
             // Construct all data needed to upload file
             var default_ext = '';
             var base_name = '';
@@ -273,14 +273,14 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
                 return files_resource_to_contents_model(fullpath, resource);
             });
         };
-        Content.prototype.delete = function (path) {
+        Contents.prototype.delete = function (path) {
             return gapiutils.gapi_ready.then(function () {
                 return driveutils.get_id_for_path(path, driveutils.FileType.FILE);
             }).then(function (file_id) {
                 return gapiutils.execute(gapi.client.drive.files.delete({ 'fileId': file_id }));
             });
         };
-        Content.prototype.rename = function (path, new_path) {
+        Contents.prototype.rename = function (path, new_path) {
             var that = this;
             // Rename is only possible when path and new_path differ except in
             // their last component, so check this first.
@@ -325,7 +325,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          * If the resource has been modifeied on Drive in the
          * meantime, prompt user for overwrite.
          **/
-        Content.prototype.save = function (path, model) {
+        Contents.prototype.save = function (path, model) {
             var that = this;
             var path_and_filename = utils.url_path_split(path);
             var path = path_and_filename[0];
@@ -347,7 +347,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
                 return files_resource_to_contents_model(path, file_resource);
             });
         };
-        Content.prototype.copy = function (path, model) {
+        Contents.prototype.copy = function (path, model) {
             return Promise.reject(new Error('Copy not implemented yet.'));
         };
         /**
@@ -355,7 +355,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          */
         // NOTE: it would be better modify the API to combine create_checkpoint with
         // save
-        Content.prototype.create_checkpoint = function (path, options) {
+        Contents.prototype.create_checkpoint = function (path, options) {
             var that = this;
             return gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FILE)).then(function (file_id) {
                 var revision_id = that.last_observed_revision[file_id];
@@ -377,7 +377,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
                 };
             });
         };
-        Content.prototype.restore_checkpoint = function (path, checkpoint_id, options) {
+        Contents.prototype.restore_checkpoint = function (path, checkpoint_id, options) {
             var file_id_prm = gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FILE));
             var contents_prm = file_id_prm.then(function (file_id) {
                 var request = gapi.client.drive.revisions.get({
@@ -394,7 +394,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
                 return driveutils.upload_to_drive(contents, undefined, file_id);
             });
         };
-        Content.prototype.list_checkpoints = function (path, options) {
+        Contents.prototype.list_checkpoints = function (path, options) {
             return gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FILE)).then(function (file_id) {
                 var request = gapi.client.drive.revisions.list({ 'fileId': file_id });
                 return gapiutils.execute(request);
@@ -430,7 +430,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          *     success: success callback
          *     error: error callback
          */
-        Content.prototype.list_contents = function (path, options) {
+        Contents.prototype.list_contents = function (path, options) {
             var that = this;
             return gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FOLDER)).then(function (folder_id) {
                 // Gets contents of the folder 1000 items at a time.  Google Drive
@@ -469,7 +469,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
                 return { content: list };
             });
         };
-        return Content;
+        return Contents;
     })();
-    exports.Content = Content;
+    exports.Contents = Contents;
 });

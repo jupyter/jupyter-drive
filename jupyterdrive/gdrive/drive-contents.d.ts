@@ -1,4 +1,4 @@
-export declare class Content {
+export declare class Contents {
     base_url: string;
     config: any;
     last_observed_revision: any;
