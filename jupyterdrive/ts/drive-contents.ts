@@ -7,6 +7,9 @@ import dialog = require('base/js/dialog');
 import gapiutils = require('./gapiutils');
 import driveutils = require('./driveutils');
 import notebook_model = require('./notebook_model');
+import iface = require('content-interface');
+
+
 
 declare var gapi;
 
@@ -98,7 +101,7 @@ var files_resource_to_contents_model = function(path, resource, content?) {
     };
 };
 
-export class Contents { 
+export class Contents implements iface.IContents { 
 
     base_url:string;
     config:any;

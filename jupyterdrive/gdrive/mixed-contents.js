@@ -65,7 +65,7 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
          * @param {Object} filesystem
          * @return {Object} An object representing a virtual directory.
          */
-        Contents.prototype.virtual_fs_roots = function (filesystem) {
+        Contents.prototype._virtual_fs_roots = function (filesystem) {
             return Object.keys(filesystem).map(function (root) {
                 return {
                     type: 'directory',
@@ -118,7 +118,7 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
          * @return {String} the converted path
          *
          */
-        Contents.prototype.to_virtual_path = function (root, path) {
+        Contents.prototype._to_virtual_path = function (root, path) {
             return utils.url_path_join(root, path);
         };
         /**
@@ -128,8 +128,8 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
          * @param {File} file The file model (this is modified by the function).
          * @return {File} the converted file model
          */
-        Contents.prototype.to_virtual_file = function (root, file) {
-            file['path'] = this.to_virtual_path(root, file['path']);
+        Contents.prototype._to_virtual_file = function (root, file) {
+            file['path'] = this._to_virtual_path(root, file['path']);
             return file;
         };
         /**
@@ -139,19 +139,19 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
          * @param {Object} list The file list (this is modified by the function).
          * @return {Object} The converted file list
          */
-        Contents.prototype.to_virtual_list = function (root, list) {
-            list['content'].forEach($.proxy(this.to_virtual_file, this, root));
+        Contents.prototype._to_virtual_list = function (root, list) {
+            list['content'].forEach($.proxy(this._to_virtual_file, this, root));
             return list;
         };
-        Contents.prototype.to_virtual = function (root, type, object) {
+        Contents.prototype._to_virtual = function (root, type, object) {
             if (type === ArgType.PATH) {
-                return this.to_virtual_path(root, object);
+                return this._to_virtual_path(root, object);
             }
             else if (type === ArgType.FILE) {
-                return this.to_virtual_file(root, object);
+                return this._to_virtual_file(root, object);
             }
             else if (type === ArgType.LIST) {
-                return this.to_virtual_list(root, object);
+                return this._to_virtual_list(root, object);
             }
             else {
                 return object;
@@ -187,7 +187,7 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
                 var root = _this.get_fs_root(filesystem, args[0]);
                 if (root === '') {
                     if (method_name === 'list_contents') {
-                        return { 'content': _this.virtual_fs_roots(filesystem) };
+                        return { 'content': _this._virtual_fs_roots(filesystem) };
                     }
                     else {
                         throw 'true root directory only contains mount points.';
@@ -197,7 +197,7 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
                     args[i] = _this.from_virtual(root, arg_types[i], args[i], _this.config.data['mixed_contents']['schema']);
                 }
                 var contents = filesystem[root];
-                return contents[method_name].apply(contents, args).then($.proxy(_this.to_virtual, _this, root, return_type));
+                return contents[method_name].apply(contents, args).then($.proxy(_this._to_virtual, _this, root, return_type));
             });
         };
         /**

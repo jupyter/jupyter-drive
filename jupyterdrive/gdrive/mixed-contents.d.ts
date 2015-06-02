@@ -1,10 +1,11 @@
+import iface = require('content-interface');
 export interface File {
     path: string;
 }
 export interface FileList {
     contents: any;
 }
-export declare class Contents {
+export declare class Contents implements iface.IContents {
     config: any;
     filesystem: any;
     constructor(options: any);
@@ -13,11 +14,7 @@ export declare class Contents {
      * @param {Object} filesystem
      * @return {Object} An object representing a virtual directory.
      */
-    virtual_fs_roots(filesystem: any): {
-        type: string;
-        name: string;
-        path: string;
-    }[];
+    private _virtual_fs_roots(filesystem);
     /**
      * Routing functions
      */
@@ -45,7 +42,7 @@ export declare class Contents {
      * @return {String} the converted path
      *
      */
-    to_virtual_path(root: string, path: string): string;
+    private _to_virtual_path(root, path);
     /**
      * Takes a file model, and convert its path to the virtual filesystem.
      * from Google Drive format
@@ -53,7 +50,7 @@ export declare class Contents {
      * @param {File} file The file model (this is modified by the function).
      * @return {File} the converted file model
      */
-    to_virtual_file(root: string, file: File): File;
+    private _to_virtual_file(root, file);
     /**
      * Takes a file list, and convert its path to the virtual filesystem.
      * from Google Drive format
@@ -61,8 +58,8 @@ export declare class Contents {
      * @param {Object} list The file list (this is modified by the function).
      * @return {Object} The converted file list
      */
-    to_virtual_list(root: string, list: FileList): FileList;
-    to_virtual(root: string, type: any, object: any): any;
+    private _to_virtual_list(root, list);
+    private _to_virtual(root, type, object);
     from_virtual(root: string, type: any, object: any, config: any): any;
     /**
      * Route a function to the appropriate content manager class

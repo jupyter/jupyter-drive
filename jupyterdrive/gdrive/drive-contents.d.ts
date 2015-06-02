@@ -1,4 +1,5 @@
-export declare class Contents {
+import iface = require('content-interface');
+export declare class Contents implements iface.IContents {
     base_url: string;
     config: any;
     last_observed_revision: any;

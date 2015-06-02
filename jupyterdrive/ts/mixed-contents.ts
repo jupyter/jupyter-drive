@@ -10,6 +10,7 @@ import IPython = require('base/js/namespace')
 
 import utils = require("base/js/utils");
 import Promises = require('es6-promise');
+import iface = require('content-interface');
 
 /** Enum for object types */
 var ArgType = {
@@ -43,7 +44,7 @@ export interface FileList {
     contents:any
 }
 
-export class Contents {
+export class Contents implements iface.IContents {
 
     config:any;
     filesystem:any;
@@ -96,7 +97,7 @@ export class Contents {
      * @param {Object} filesystem
      * @return {Object} An object representing a virtual directory.
      */
-     virtual_fs_roots(filesystem) {
+     private _virtual_fs_roots(filesystem) {
         return Object.keys(filesystem).map(function(root) {
             return {
                 type: 'directory',
@@ -151,7 +152,7 @@ export class Contents {
      * @return {String} the converted path
      *
      */
-    to_virtual_path(root:string, path:string):string {
+    private _to_virtual_path(root:string, path:string):string {
         return utils.url_path_join(root, path);
     }
 
@@ -162,8 +163,8 @@ export class Contents {
      * @param {File} file The file model (this is modified by the function).
      * @return {File} the converted file model
      */
-    to_virtual_file(root:string, file:File):File {
-        file['path'] = this.to_virtual_path(root, file['path']);
+    private _to_virtual_file(root:string, file:File):File {
+        file['path'] = this._to_virtual_path(root, file['path']);
         return file;
     }
 
@@ -174,19 +175,19 @@ export class Contents {
      * @param {Object} list The file list (this is modified by the function).
      * @return {Object} The converted file list
      */
-    to_virtual_list(root:string, list:FileList):FileList {
-        list['content'].forEach($.proxy(this.to_virtual_file, this, root));
+    private _to_virtual_list(root:string, list:FileList):FileList {
+        list['content'].forEach($.proxy(this._to_virtual_file, this, root));
         return list;
     }
 
 
-    to_virtual(root:string, type, object) {
+    private _to_virtual(root:string, type, object) {
         if (type === ArgType.PATH) {
-            return this.to_virtual_path(root, object);
+            return this._to_virtual_path(root, object);
         } else if (type === ArgType.FILE) {
-            return this.to_virtual_file(root, object);
+            return this._to_virtual_file(root, object);
         } else if (type === ArgType.LIST) {
-            return this.to_virtual_list(root, object);
+            return this._to_virtual_list(root, object);
         } else {
             return object;
         }
@@ -221,7 +222,7 @@ export class Contents {
 
             if (root === '') {
                 if (method_name === 'list_contents') {
-                  return {'content': this.virtual_fs_roots(filesystem)};
+                  return {'content': this._virtual_fs_roots(filesystem)};
                 } else {
                   throw 'true root directory only contains mount points.';
                 }
@@ -232,7 +233,7 @@ export class Contents {
             }
             var contents = filesystem[root];
             return contents[method_name].apply(contents, args).then(
-                $.proxy(this.to_virtual, this, root, return_type));
+                $.proxy(this._to_virtual, this, root, return_type));
         });
     }
 
