@@ -19,6 +19,7 @@ gulp.task('watch', ['js'], function() {
 });
 
 gulp.task('js', function() {
+    console.log('=========== Rebuilding JS ===========')
     var jsResult = gulp.src([
                                 'jupyterdrive/js/*.js',
         

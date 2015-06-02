@@ -22,7 +22,6 @@ export interface Notebook {
  * the notebook server: creating new notebooks, and converting to/from
  * the on-disk format.
  */
-export module notebook_model {
     
     /**
      * Utility method to transform a notebook.
@@ -111,4 +110,3 @@ export module notebook_model {
         };
     }
 
-}

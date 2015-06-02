@@ -1,17 +1,108 @@
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
 //
-define(function(require) {
-    "use strict";
+import $ = require('jquery');
+import utils = require('base/js/utils');
+import dialog = require('base/js/dialog');
+import gapiutils = require('./gapiutils');
+import drive_utils = require('./drive_utils');
+import notebook_model = require('./notebook_model');
 
-    var $ = require('jquery');
-    var utils = require('base/js/utils');
-    var dialog = require('base/js/dialog');
-    var gapiutils = require('./gapiutils');
-    var drive_utils = require('./drive_utils');
-    var notebook_model = require('./notebook_model').notebook_model;
+declare var gapi;
 
-    var Contents = function(options) {
+    /**
+     * Takes a contents model and converts it into metadata and bytes for
+     * Google Drive upload.
+     */
+var contents_model_to_metadata_and_bytes = function(model) {
+    var content = model.content;
+    var mimetype = model.mimetype;
+    var format = model.format;
+    if (model['type'] === 'notebook') {
+        content = notebook_model.file_contents_from_notebook(content);
+        format = 'json';
+        mimetype = drive_utils.NOTEBOOK_MIMETYPE;
+    } else if (model['type'] === 'file') {
+        format = format || 'text/plain';
+    } else if (model['type'] === 'directory') {
+        format = 'json'
+        mimetype = drive_utils.FOLDER_MIME_TYPE;
+    } else {
+        throw ("Unrecognized type " + model['type']);
+    }
+
+    // Set mimetype according to format if it's not set
+    if (format == 'json') {
+        content = JSON.stringify(content);
+        mimetype = mimetype || 'application/json';
+    } else if (format == 'base64') {
+        mimetype = mimetype || 'application/octet-stream';
+    } else if (format == 'text') {
+        mimetype = mimetype || 'text/plain';
+    } else {
+        throw ("Unrecognized format " + format)
+    }
+
+    var metadata = {
+        'title' : model['name'],
+        'mimeType' : mimetype
+    };
+
+    return [metadata, content];
+}
+/**
+ * Converts a Google Drive files resource, (see
+ * https://developers.google.com/drive/v2/reference/files)
+ * to an IPEP 27 contents model (see
+ * https://github.com/ipython/ipython/wiki/IPEP-27:-Contents-Service)
+ * Note that files resources can represent files or directories.
+ *
+ * TODO: check that date formats are the same, and either
+ * convert to the IPython format, or document the difference.
+ *
+ * @param {string} path Path of resoure (including file name)
+ * @param {Object} resource Google Drive files resource
+ * @return {Object} IPEP 27 compliant contents model
+ */
+var files_resource_to_contents_model = function(path, resource, content) {
+    var title = resource['title'];
+    var mimetype = resource['mimeType'];
+
+    // Determine resource type.
+    var nbextension = '.ipynb';
+    var type = 'file';
+    var model_content;
+    if (mimetype === drive_utils.FOLDER_MIME_TYPE) {
+        type = 'directory';
+    } else if (mimetype === drive_utils.NOTEBOOK_MIMETYPE ||
+        title.indexOf(nbextension, title.length - nbextension.length) !== -1) {
+        type = 'notebook';
+        if( typeof content !== 'undefined'){
+            model_content = notebook_model.notebook_from_file_contents(content);
+        }
+    } else {
+        if( typeof content !== 'undefined'){
+            model_content = content;
+        }
+    }
+    return {
+        type: type,
+        name: title,
+        path: path,
+        created: resource['createdDate'],
+        last_modified: resource['modifiedDate'],
+        content : model_content,
+        writable : resource['editable']
+    };
+};
+
+export class Content { 
+
+    base_url:string;
+    config:any;
+    last_observed_revision:any;
+
+    constructor(options) {
         // Constructor
         //
         // A contentmanager handles passing file operations
@@ -35,7 +126,7 @@ define(function(require) {
           gapiutils.gapi_ready.then(drive_utils.set_user_info);
         })
 
-    };
+    }
 
     /**
      * Utility functions
@@ -51,96 +142,11 @@ define(function(require) {
      *
      * @param {resource} resource_prm a Google Drive file resource.
      */
-    Contents.prototype.observe_file_resource = function(resource) {
+    observe_file_resource(resource) {
         this.last_observed_revision[resource['id']] = resource['headRevisionId'];
-    };
-
-    /**
-     * Converts a Google Drive files resource, (see
-     * https://developers.google.com/drive/v2/reference/files)
-     * to an IPEP 27 contents model (see
-     * https://github.com/ipython/ipython/wiki/IPEP-27:-Contents-Service)
-     * Note that files resources can represent files or directories.
-     *
-     * TODO: check that date formats are the same, and either
-     * convert to the IPython format, or document the difference.
-     *
-     * @param {string} path Path of resoure (including file name)
-     * @param {Object} resource Google Drive files resource
-     * @return {Object} IPEP 27 compliant contents model
-     */
-    var files_resource_to_contents_model = function(path, resource, content) {
-        var title = resource['title'];
-        var mimetype = resource['mimeType'];
-
-        // Determine resource type.
-        var nbextension = '.ipynb';
-        var type = 'file';
-        var model_content;
-        if (mimetype === drive_utils.FOLDER_MIME_TYPE) {
-            type = 'directory';
-        } else if (mimetype === drive_utils.NOTEBOOK_MIMETYPE ||
-            title.indexOf(nbextension, title.length - nbextension.length) !== -1) {
-            type = 'notebook';
-            if( typeof content !== 'undefined'){
-                model_content = notebook_model.notebook_from_file_contents(content);
-            }
-        } else {
-            if( typeof content !== 'undefined'){
-                model_content = content;
-            }
-        }
-        return {
-            type: type,
-            name: title,
-            path: path,
-            created: resource['createdDate'],
-            last_modified: resource['modifiedDate'],
-            content : model_content,
-            writable : resource['editable']
-        };
-    };
-
-    /**
-     * Takes a contents model and converts it into metadata and bytes for
-     * Google Drive upload.
-     */
-    var contents_model_to_metadata_and_bytes = function(model) {
-        var content = model.content;
-        var mimetype = model.mimetype;
-        var format = model.format;
-        if (model['type'] === 'notebook') {
-            content = notebook_model.file_contents_from_notebook(content);
-            format = 'json';
-            mimetype = drive_utils.NOTEBOOK_MIMETYPE;
-        } else if (model['type'] === 'file') {
-            format = format || 'text/plain';
-        } else if (model['type'] === 'directory') {
-            format = 'json'
-            mimetype = drive_utils.FOLDER_MIME_TYPE;
-        } else {
-            throw ("Unrecognized type " + model['type']);
-        }
-
-        // Set mimetype according to format if it's not set
-        if (format == 'json') {
-            content = JSON.stringify(content);
-            mimetype = mimetype || 'application/json';
-        } else if (format == 'base64') {
-            mimetype = mimetype || 'application/octet-stream';
-        } else if (format == 'text') {
-            mimetype = mimetype || 'text/plain';
-        } else {
-            throw ("Unrecognized format " + format)
-        }
-
-        var metadata = {
-            'title' : model['name'],
-            'mimeType' : mimetype
-        };
-
-        return [metadata, content];
     }
+
+
 
     /**
      * Saves a version of an existing file on drive
@@ -148,7 +154,7 @@ define(function(require) {
      * @param {Object} model The IPython model object to be saved
      * @return {Promise} A promise fullfilled with the resource of the saved file.
      */
-    Contents.prototype.save_existing = function(resource, model) {
+    save_existing(resource, model) {
         var that = this;
         var converted = contents_model_to_metadata_and_bytes(model);
         var contents = converted[1];
@@ -186,7 +192,7 @@ define(function(require) {
      * @param {Object} model The IPython model object to be saved
      * @return {Promise} A promise fullfilled with the resource of the saved file.
      */
-    Contents.prototype.upload_new = function(folder_id, model) {
+    upload_new(folder_id, model) {
         var that = this;
 
         var converted = contents_model_to_metadata_and_bytes(model);
@@ -216,7 +222,7 @@ define(function(require) {
      * @param {String} name
      * @param {Object} options
      */
-    Contents.prototype.get = function (path, options) {
+    get(path, options) {
         var that = this;
         var metadata_prm = gapiutils.gapi_ready.then(
             $.proxy(drive_utils.get_resource_for_path, this, path, drive_utils.FileType.FILE));
@@ -231,7 +237,7 @@ define(function(require) {
             var model = files_resource_to_contents_model(path, metadata, contents);
             return model;
         });
-    };
+    }
 
 
     /**
@@ -243,7 +249,7 @@ define(function(require) {
      *      ext: file extension to use
      *      type: model type to create ('notebook', 'file', or 'directory')
      */
-    Contents.prototype.new_untitled = function(path, options) {
+    new_untitled(path, options) {
         // Construct all data needed to upload file
         var default_ext = '';
         var base_name = '';
@@ -279,7 +285,7 @@ define(function(require) {
 
         var that = this;
         var folder_id_prm = gapiutils.gapi_ready
-        .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.Folder))
+            .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.Folder))
         var filename_prm = folder_id_prm.then(function(resource){
             return drive_utils.get_new_filename(resource, options['ext'] || default_ext, base_name);
         });
@@ -293,9 +299,9 @@ define(function(require) {
             var fullpath = utils.url_path_join(path, resource['title']);
             return files_resource_to_contents_model(fullpath, resource);
         });
-    };
+    }
 
-    Contents.prototype.delete = function(path) {
+    delete(path) {
         return gapiutils.gapi_ready
         .then(function() {
             return drive_utils.get_id_for_path(path, drive_utils.FileType.FILE);
@@ -303,9 +309,9 @@ define(function(require) {
         .then(function(file_id){
             return gapiutils.execute(gapi.client.drive.files.delete({'fileId': file_id}));
         });
-    };
+    }
 
-    Contents.prototype.rename = function(path, new_path) {
+    rename(path, new_path) {
         var that = this;
         // Rename is only possible when path and new_path differ except in
         // their last component, so check this first.
@@ -348,14 +354,14 @@ define(function(require) {
             that.observe_file_resource(resource);
             return files_resource_to_contents_model(new_path, resource);
         });
-    };
+    }
 
     /**
      * Given a path and a model, save the document.
      * If the resource has been modifeied on Drive in the
      * meantime, prompt user for overwrite.
      **/
-    Contents.prototype.save = function(path, model) {
+    save(path, model) {
         var that = this;
         var path_and_filename = utils.url_path_split(path);
         var path = path_and_filename[0];
@@ -379,12 +385,12 @@ define(function(require) {
             that.observe_file_resource(file_resource);
             return files_resource_to_contents_model(path, file_resource);
         });
-    };
+    }
 
 
-    Contents.prototype.copy = function(path, model) {
+    copy(path, model) {
         return Promise.reject(new Error('Copy not implemented yet.'));
-    };
+    }
 
     /**
      * Checkpointing Functions
@@ -392,7 +398,7 @@ define(function(require) {
 
     // NOTE: it would be better modify the API to combine create_checkpoint with
     // save
-    Contents.prototype.create_checkpoint = function(path, options) {
+    create_checkpoint(path, options) {
         var that = this;
         return gapiutils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FILE))
@@ -416,9 +422,9 @@ define(function(require) {
                 drive_resource: item
             };
         });
-    };
+    }
 
-    Contents.prototype.restore_checkpoint = function(path, checkpoint_id, options) {
+    restore_checkpoint(path, checkpoint_id, options) {
         var file_id_prm = gapiutils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FILE))
 
@@ -439,9 +445,9 @@ define(function(require) {
             var contents = values[1];
             return drive_utils.upload_to_drive(contents, undefined, file_id);
         });
-    };
+    }
 
-    Contents.prototype.list_checkpoints = function(path, options) {
+    list_checkpoints(path, options) {
         return gapiutils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FILE))
         .then(function(file_id) {
@@ -459,7 +465,7 @@ define(function(require) {
                 };
             });
         });
-    };
+    }
 
     /**
      * File management functions
@@ -482,7 +488,7 @@ define(function(require) {
      *     success: success callback
      *     error: error callback
      */
-    Contents.prototype.list_contents = function(path, options) {
+    list_contents(path, options) {
         var that = this;
         return gapiutils.gapi_ready
         .then($.proxy(drive_utils.get_id_for_path, this, path, drive_utils.FileType.FOLDER))
@@ -525,9 +531,7 @@ define(function(require) {
             });
             return {content: list};
         });
-    };
+    }
 
 
-
-    return {'Contents': Contents};
-});
+}
