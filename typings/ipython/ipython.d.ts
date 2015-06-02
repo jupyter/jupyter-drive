@@ -5,6 +5,7 @@ declare module "base/js/namespace" {
 
 declare module "base/js/utils"{
     function url_path_join(root:string, path:string):string;
+    function url_path_split(path:string):string[];
     function promising_ajax(url:string, object:any):Promise<any>;
     function wrap_ajax_error(e:any):any;
 }

@@ -85,7 +85,7 @@ export var split_path = function(path) {
      * @return {Promise} fullfilled with file/folder id (string) on success
      *     or Error object on error.
      */
-export var get_resource_for_path = function(path, type) {
+export var get_resource_for_path = function(path, type?) {
         var components = split_path(path);
         if (components.length == 0) {
             return gapiutils.execute(gapi.client.drive.about.get())
@@ -119,7 +119,7 @@ export var get_resource_for_path = function(path, type) {
      * @return {Promise} fullfilled with folder id (string) on success
      *     or Error object on error.
      */
-export var get_id_for_path = function(path, type) {
+export var get_id_for_path = function(path, type?) {
         var components = split_path(path);
         if (components.length == 0) {
             return $.Deferred().resolve('root');
@@ -198,7 +198,7 @@ export var get_new_filename = function(opt_folderId, ext, base_name) {
      * @return {Promise} A promise resolved with the Google Drive Files
      *     resource for the uploaded file, or rejected with an Error object.
      */
-export var upload_to_drive = function(data, metadata, opt_fileId, opt_params) {
+export var upload_to_drive = function(data, metadata, opt_fileId?, opt_params?: any) {
         var params = opt_params || {};
         var delimiter = '\r\n--' + MULTIPART_BOUNDARY + '\r\n';
         var close_delim = '\r\n--' + MULTIPART_BOUNDARY + '--';
@@ -257,7 +257,7 @@ export var GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR = 2.0;
      *     Should be set when already_picked is true.
      * @return {Promise} A promise fullfilled by file contents.
      */
-export var get_contents = function(resource, already_picked, opt_num_tries) {
+export var get_contents = function(resource, already_picked, opt_num_tries?) {
         if (resource['downloadUrl']) {
             return gapiutils.download(resource['downloadUrl']);
         } else if (already_picked) {
