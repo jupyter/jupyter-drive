@@ -133,134 +133,134 @@ export var get_id_for_path = function(path, type?) {
     }
 
 
-    /**
-     * Obtains the filename that should be used for a new file in a given
-     * folder.  This is the next file in the series Untitled0, Untitled1, ... in
-     * the given drive folder.  As a fallback, returns Untitled.
-     *
-     * @method get_new_filename
-     * @param {function(string)} callback Called with the name for the new file.
-     * @param {string} opt_folderId optinal Drive folder Id to search for
-     *     filenames.  Uses root, if none is specified.
-     * @param {string} ext The extension to use
-     * @param {string} base_name The base name of the file
-     * @return A promise fullfilled with the new filename.  In case of errors,
-     *     'Untitled.ipynb' is used as a fallback.
-     */
+/**
+ * Obtains the filename that should be used for a new file in a given
+ * folder.  This is the next file in the series Untitled0, Untitled1, ... in
+ * the given drive folder.  As a fallback, returns Untitled.
+ *
+ * @method get_new_filename
+ * @param {function(string)} callback Called with the name for the new file.
+ * @param {string} opt_folderId optinal Drive folder Id to search for
+ *     filenames.  Uses root, if none is specified.
+ * @param {string} ext The extension to use
+ * @param {string} base_name The base name of the file
+ * @return A promise fullfilled with the new filename.  In case of errors,
+ *     'Untitled.ipynb' is used as a fallback.
+ */
 export var get_new_filename = function(opt_folderId, ext, base_name) {
-        /** @type {string} */
-        var folderId = opt_folderId || 'root';
+    /** @type {string} */
+    var folderId = opt_folderId || 'root';
 
-        var query = 'title contains \'' + base_name + '\'' +
-            ' and \'' + folderId + '\' in parents' +
-            ' and trashed = false';
-        var request = gapi.client.drive.files.list({
-            'maxResults': 1000,
-            'folderId' : folderId,
-            'q': query
+    var query = 'title contains \'' + base_name + '\'' +
+        ' and \'' + folderId + '\' in parents' +
+        ' and trashed = false';
+    var request = gapi.client.drive.files.list({
+        'maxResults': 1000,
+        'folderId' : folderId,
+        'q': query
+    });
+
+    var fallbackFilename = base_name + ext;
+    return gapiutils.execute(request)
+    .then(function(response) {
+        // Use 'Untitled.ipynb' as a fallback in case of error
+        var files = response['items'] || [];
+        var existingFilenames = $.map(files, function(filesResource) {
+            return filesResource['title'];
         });
 
-        var fallbackFilename = base_name + ext;
-        return gapiutils.execute(request)
-        .then(function(response) {
-            // Use 'Untitled.ipynb' as a fallback in case of error
-            var files = response['items'] || [];
-            var existingFilenames = $.map(files, function(filesResource) {
-                return filesResource['title'];
-            });
-
-            // Loop over file names Untitled0, ... , UntitledN where N is the number of
-            // elements in existingFilenames.  Select the first file name that does not
-            // belong to existingFilenames.  This is guaranteed to find a file name
-            // that does not belong to existingFilenames, since there are N + 1 file
-            // names tried, and existingFilenames contains N elements.
-            for (var i = 0; i <= existingFilenames.length; i++) {
-                /** @type {string} */
-                var filename = base_name + i + ext;
-                if (existingFilenames.indexOf(filename) == -1) {
-                    return filename;
-                }
+        // Loop over file names Untitled0, ... , UntitledN where N is the number of
+        // elements in existingFilenames.  Select the first file name that does not
+        // belong to existingFilenames.  This is guaranteed to find a file name
+        // that does not belong to existingFilenames, since there are N + 1 file
+        // names tried, and existingFilenames contains N elements.
+        for (var i = 0; i <= existingFilenames.length; i++) {
+            /** @type {string} */
+            var filename = base_name + i + ext;
+            if (existingFilenames.indexOf(filename) == -1) {
+                return filename;
             }
+        }
 
-            // Control should not reach this point, so an error has occured
-            return fallbackFilename;
-        })
-        .catch(function(error) { return Promise.resolve(fallbackFilename); });
-    };
+        // Control should not reach this point, so an error has occured
+        return fallbackFilename;
+    })
+    .catch(function(error) { return Promise.resolve(fallbackFilename); });
+};
 
 
-    /**
-     * Uploads a notebook to Drive, either creating a new one or saving an
-     * existing one.
-     *
-     * @method upload_to_drive
-     * @param {string} data The file contents as a string
-     * @param {Object} metadata File metadata
-     * @param {string=} opt_fileId file Id.  If false, a new file is created.
-     * @param {Object?} opt_params a dictionary containing the following keys
-     *     pinned: whether this save should be pinned
-     * @return {Promise} A promise resolved with the Google Drive Files
-     *     resource for the uploaded file, or rejected with an Error object.
-     */
+/**
+ * Uploads a notebook to Drive, either creating a new one or saving an
+ * existing one.
+ *
+ * @method upload_to_drive
+ * @param {string} data The file contents as a string
+ * @param {Object} metadata File metadata
+ * @param {string=} opt_fileId file Id.  If false, a new file is created.
+ * @param {Object?} opt_params a dictionary containing the following keys
+ *     pinned: whether this save should be pinned
+ * @return {Promise} A promise resolved with the Google Drive Files
+ *     resource for the uploaded file, or rejected with an Error object.
+ */
 export var upload_to_drive = function(data, metadata, opt_fileId?, opt_params?: any) {
-        var params = opt_params || {};
-        var delimiter = '\r\n--' + MULTIPART_BOUNDARY + '\r\n';
-        var close_delim = '\r\n--' + MULTIPART_BOUNDARY + '--';
-        var body = delimiter +
-            'Content-Type: application/json\r\n\r\n';
-        var mime;
-        if (metadata) {
-            mime = metadata.mimeType;
-            body += JSON.stringify(metadata);
+    var params = opt_params || {};
+    var delimiter = '\r\n--' + MULTIPART_BOUNDARY + '\r\n';
+    var close_delim = '\r\n--' + MULTIPART_BOUNDARY + '--';
+    var body = delimiter +
+        'Content-Type: application/json\r\n\r\n';
+    var mime;
+    if (metadata) {
+        mime = metadata.mimeType;
+        body += JSON.stringify(metadata);
+    }
+    body += delimiter;
+    if (mime) {
+        body += 'Content-Type: ' + mime + '\r\n';
+        if (mime === 'application/octet-stream') {
+            body += 'Content-Transfer-Encoding: base64\r\n';
         }
-        body += delimiter;
-        if (mime) {
-            body += 'Content-Type: ' + mime + '\r\n';
-            if (mime === 'application/octet-stream') {
-                body += 'Content-Transfer-Encoding: base64\r\n';
-            }
-        }
-        body +='\r\n' +
-            data +
-            close_delim;
+    }
+    body +='\r\n' +
+        data +
+        close_delim;
 
-        var path = '/upload/drive/v2/files';
-        var method = 'POST';
-        if (opt_fileId) {
-            path += '/' + opt_fileId;
-            method = 'PUT';
-        }
+    var path = '/upload/drive/v2/files';
+    var method = 'POST';
+    if (opt_fileId) {
+        path += '/' + opt_fileId;
+        method = 'PUT';
+    }
 
-        var request = gapi.client.request({
-            'path': path,
-            'method': method,
-            'params': {
-                'uploadType': 'multipart',
-                'pinned' : params['pinned']
-            },
-            'headers': {
-                'Content-Type': 'multipart/mixed; boundary="' +
-                MULTIPART_BOUNDARY + '"'
-            },
-            'body': body
-        });
-        return gapiutils.execute(request);
-    };
+    var request = gapi.client.request({
+        'path': path,
+        'method': method,
+        'params': {
+            'uploadType': 'multipart',
+            'pinned' : params['pinned']
+        },
+        'headers': {
+            'Content-Type': 'multipart/mixed; boundary="' +
+            MULTIPART_BOUNDARY + '"'
+        },
+        'body': body
+    });
+    return gapiutils.execute(request);
+};
 
 export var GET_CONTENTS_INITIAL_DELAY = 200;  // 200 ms
 export var GET_CONTENTS_MAX_TRIES = 5;
 export var GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR = 2.0;
 
-    /**
-     * Attempt to get the contents of a file with the given id.  This may
-     * involve requesting the user to open the file in a FilePicker.
-     * @param {Object} resource The files resource of the file.
-     * @param {Boolean} already_picked Set to true if this file has already
-     *     been selected by the FilePicker
-     * @param {Number?} opt_num_tries The number tries left to open this file.
-     *     Should be set when already_picked is true.
-     * @return {Promise} A promise fullfilled by file contents.
-     */
+/**
+ * Attempt to get the contents of a file with the given id.  This may
+ * involve requesting the user to open the file in a FilePicker.
+ * @param {Object} resource The files resource of the file.
+ * @param {Boolean} already_picked Set to true if this file has already
+ *     been selected by the FilePicker
+ * @param {Number?} opt_num_tries The number tries left to open this file.
+ *     Should be set when already_picked is true.
+ * @return {Promise} A promise fullfilled by file contents.
+ */
 export var get_contents = function(resource, already_picked, opt_num_tries?) {
         if (resource['downloadUrl']) {
             return gapiutils.download(resource['downloadUrl']);
