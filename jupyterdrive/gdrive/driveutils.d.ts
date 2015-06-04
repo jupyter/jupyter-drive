@@ -92,7 +92,7 @@ export declare var GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR: number;
  *     Should be set when already_picked is true.
  * @return {Promise} A promise fullfilled by file contents.
  */
-export declare var get_contents: (resource: any, already_picked: any, opt_num_tries?: any) => any;
+export declare var get_contents: (resource: any, already_picked: boolean, opt_num_tries?: any) => any;
 /**
  * Fetch user avatar url and put it in the header
  * optionally take a selector into which to insert the img tag
@@ -100,4 +100,4 @@ export declare var get_contents: (resource: any, already_picked: any, opt_num_tr
  *
  *
  **/
-export declare var set_user_info: (selector: any) => any;
+export declare var set_user_info: (selector: string) => Promise<any>;

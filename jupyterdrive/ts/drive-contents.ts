@@ -457,7 +457,7 @@ export class GoogleDriveContents implements IContents {
         });
     }
 
-    list_checkpoints(path:Path, options) {
+    list_checkpoints(path:Path, options:any) {
         return gapiutils.gapi_ready
         .then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FILE))
         .then(function(file_id) {

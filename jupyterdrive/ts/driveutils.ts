@@ -258,7 +258,7 @@ export var GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR = 2.0;
  *     Should be set when already_picked is true.
  * @return {Promise} A promise fullfilled by file contents.
  */
-export var get_contents = function(resource, already_picked, opt_num_tries?) {
+export var get_contents = function(resource, already_picked:boolean, opt_num_tries?) {
     if (resource['downloadUrl']) {
         return gapiutils.download(resource['downloadUrl']);
     } else if (already_picked) {
@@ -290,14 +290,14 @@ export var get_contents = function(resource, already_picked, opt_num_tries?) {
     }
 };
 
-    /**
-     * Fetch user avatar url and put it in the header
-     * optionally take a selector into which to insert the img tag
-     *
-     *
-     *
-     **/
-export var set_user_info = function(selector){
+/**
+ * Fetch user avatar url and put it in the header
+ * optionally take a selector into which to insert the img tag
+ *
+ *
+ *
+ **/
+export var set_user_info = function(selector:string):Promise<any>{
         selector = selector || '#header-container';
         var request = gapi.client.drive.about.get()
         return gapiutils.execute(request).then(function(result){
