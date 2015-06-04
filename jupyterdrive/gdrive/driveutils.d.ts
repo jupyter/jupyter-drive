@@ -2,11 +2,10 @@ import iface = require('content-interface');
 export declare var FOLDER_MIME_TYPE: string;
 export declare var NOTEBOOK_MIMETYPE: string;
 export declare var MULTIPART_BOUNDARY: string;
-/** Enum for file types */
-export declare var FileType: {
-    FILE: number;
-    FOLDER: number;
-};
+export declare enum FileType {
+    FILE = 1,
+    FOLDER = 2,
+}
 /**
  * Obtains the Google Drive Files resource for a file or folder relative
  * to the a given folder.  The path should be a file or a subfolder, and
@@ -22,7 +21,7 @@ export declare var FileType: {
  * @return A promise fullfilled by either the files resource for the given
  *     file/folder, or rejected with an Error object.
  */
-export declare var get_resource_for_relative_path: (path_component: any, type: any, opt_child_resource: any, folder_id: any) => any;
+export declare var get_resource_for_relative_path: (path_component: any, type: FileType, opt_child_resource: any, folder_id: any) => any;
 /**
  * Split a path into path components
  */

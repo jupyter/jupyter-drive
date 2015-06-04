@@ -4,11 +4,11 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
     exports.FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
     exports.NOTEBOOK_MIMETYPE = 'application/ipynb';
     exports.MULTIPART_BOUNDARY = '-------314159265358979323846';
-    /** Enum for file types */
-    exports.FileType = {
-        FILE: 1,
-        FOLDER: 2
-    };
+    (function (FileType) {
+        FileType[FileType["FILE"] = 1] = "FILE";
+        FileType[FileType["FOLDER"] = 2] = "FOLDER";
+    })(exports.FileType || (exports.FileType = {}));
+    var FileType = exports.FileType;
     /**
      * Obtains the Google Drive Files resource for a file or folder relative
      * to the a given folder.  The path should be a file or a subfolder, and
@@ -26,7 +26,7 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
      */
     exports.get_resource_for_relative_path = function (path_component, type, opt_child_resource, folder_id) {
         var query = 'title = \'' + path_component + '\' and trashed = false ';
-        if (type == exports.FileType.FOLDER) {
+        if (type == 2 /* FOLDER */) {
             query += ' and mimeType = \'' + exports.FOLDER_MIME_TYPE + '\'';
         }
         var request = null;
@@ -81,7 +81,7 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
         var result = Promise.resolve({ id: 'root' });
         for (var i = 0; i < components.length; i++) {
             var component = components[i];
-            var t = (i == components.length - 1) ? type : exports.FileType.FOLDER;
+            var t = (i == components.length - 1) ? type : 2 /* FOLDER */;
             var child_resource = i < components.length - 1;
             var r2 = result.then(function (resource) {
                 return resource['id'];

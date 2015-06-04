@@ -18,11 +18,8 @@ export var MULTIPART_BOUNDARY = '-------314159265358979323846';
 
 declare var gapi;
 
-    /** Enum for file types */
-export var FileType = {
-        FILE : 1,
-        FOLDER: 2
-    };
+
+export enum FileType {FILE=1, FOLDER=2}
 
 
 /**
@@ -40,7 +37,7 @@ export var FileType = {
  * @return A promise fullfilled by either the files resource for the given
  *     file/folder, or rejected with an Error object.
  */
-export var get_resource_for_relative_path = function(path_component, type, opt_child_resource, folder_id) {
+export var get_resource_for_relative_path = function(path_component, type:FileType, opt_child_resource, folder_id) {
         var query = 'title = \'' + path_component + '\' and trashed = false ';
         if (type == FileType.FOLDER) {
             query += ' and mimeType = \'' + FOLDER_MIME_TYPE + '\'';
@@ -286,7 +283,6 @@ export var get_contents = function(resource, already_picked, opt_num_tries?) {
         // the user to open a FilePicker window that allows them to indicate
         // to Google Drive that they intend to open that file with this
         // app.
-        console.log('resource:', resource)
         return pickerutils.pick_file(resource.parents[0]['id'], resource['title'])
             .then(function() {
               return get_contents(resource, true, GET_CONTENTS_MAX_TRIES);

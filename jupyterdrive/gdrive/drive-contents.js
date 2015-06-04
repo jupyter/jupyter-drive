@@ -207,7 +207,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          */
         GoogleDriveContents.prototype.get = function (path, options) {
             var that = this;
-            var metadata_prm = gapiutils.gapi_ready.then($.proxy(driveutils.get_resource_for_path, this, path, driveutils.FileType.FILE));
+            var metadata_prm = gapiutils.gapi_ready.then($.proxy(driveutils.get_resource_for_path, this, path, 1 /* FILE */));
             var contents_prm = metadata_prm.then(function (resource) {
                 that._observe_file_resource(resource);
                 return driveutils.get_contents(resource, false);
@@ -264,7 +264,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
             else {
                 return Promise.reject(new Error("Unrecognized type " + options['type']));
             }
-            var folder_id_prm = gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FOLDER));
+            var folder_id_prm = gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, 2 /* FOLDER */));
             var filename_prm = folder_id_prm.then(function (resource) {
                 return driveutils.get_new_filename(resource, options['ext'] || default_ext, base_name);
             });
@@ -280,7 +280,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
         };
         GoogleDriveContents.prototype.delete = function (path) {
             return gapiutils.gapi_ready.then(function () {
-                return driveutils.get_id_for_path(path, driveutils.FileType.FILE);
+                return driveutils.get_id_for_path(path, 1 /* FILE */);
             }).then(function (file_id) {
                 return gapiutils.execute(gapi.client.drive.files.delete({ 'fileId': file_id }));
             });
@@ -335,8 +335,8 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
             var path_and_filename = utils.url_path_split(path);
             var path = path_and_filename[0];
             var filename = path_and_filename[1];
-            return driveutils.get_resource_for_path(path, driveutils.FileType.FOLDER).then(function (folder_resource) {
-                return driveutils.get_resource_for_relative_path(filename, driveutils.FileType.FILE, false, folder_resource['id']).then(function (file_resource) {
+            return driveutils.get_resource_for_path(path, 2 /* FOLDER */).then(function (folder_resource) {
+                return driveutils.get_resource_for_relative_path(filename, 1 /* FILE */, false, folder_resource['id']).then(function (file_resource) {
                     return that._save_existing(file_resource, model);
                 }, function (error) {
                     // If the file does not exist (but the directory does) then a
@@ -362,7 +362,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
         // save
         GoogleDriveContents.prototype.create_checkpoint = function (path, options) {
             var that = this;
-            return gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FILE)).then(function (file_id) {
+            return gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, 1 /* FILE */)).then(function (file_id) {
                 var revision_id = that._last_observed_revision[file_id];
                 if (!revision_id) {
                     return Promise.reject(new Error('File must be saved before checkpointing'));
@@ -383,7 +383,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
             });
         };
         GoogleDriveContents.prototype.restore_checkpoint = function (path, checkpoint_id, options) {
-            var file_id_prm = gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FILE));
+            var file_id_prm = gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, 1 /* FILE */));
             var contents_prm = file_id_prm.then(function (file_id) {
                 var request = gapi.client.drive.revisions.get({
                     'fileId': file_id,
@@ -400,7 +400,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
             });
         };
         GoogleDriveContents.prototype.list_checkpoints = function (path, options) {
-            return gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FILE)).then(function (file_id) {
+            return gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, 1 /* FILE */)).then(function (file_id) {
                 var request = gapi.client.drive.revisions.list({ 'fileId': file_id });
                 return gapiutils.execute(request);
             }).then(function (response) {
@@ -437,7 +437,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          */
         GoogleDriveContents.prototype.list_contents = function (path, options) {
             var that = this;
-            return gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FOLDER)).then(function (folder_id) {
+            return gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, 2 /* FOLDER */)).then(function (folder_id) {
                 // Gets contents of the folder 1000 items at a time.  Google Drive
                 // returns at most 1000 items in each call to drive.files.list.
                 // Therefore we need to make multiple calls, using the following
