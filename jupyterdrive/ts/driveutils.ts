@@ -262,36 +262,37 @@ export var GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR = 2.0;
  * @return {Promise} A promise fullfilled by file contents.
  */
 export var get_contents = function(resource, already_picked, opt_num_tries?) {
-        if (resource['downloadUrl']) {
-            return gapiutils.download(resource['downloadUrl']);
-        } else if (already_picked) {
-            if (opt_num_tries == 0) {
-              return Promise.reject(new Error('Max retries of file load reached'));
-            }
-            var request = gapi.client.drive.files.get({ 'fileId': resource['id'] });
-            var reply = gapiutils.execute(request);
-            var delay = GET_CONTENTS_INITIAL_DELAY *
-                Math.pow(GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR, GET_CONTENTS_MAX_TRIES - opt_num_tries);
-            var delayed_reply = new Promise(function(resolve, reject) {
-                window.setTimeout(function() {
-                    resolve(reply);
-                }, delay);
-            });
-            return delayed_reply.then(function(new_resource) {
-                return get_contents(new_resource, true, opt_num_tries - 1);
-            });
-        } else {
-            // If downloadUrl field is missing, this means that we do not have
-            // access to the file using drive.file scope.  Therefore we prompt
-            // the user to open a FilePicker window that allows them to indicate
-            // to Google Drive that they intend to open that file with this
-            // app.
-	    return pickerutils.pick_file(resource.parents[0]['id'], resource['title'])
-                .then(function() {
-                  return get_contents(resource, true, GET_CONTENTS_MAX_TRIES);
-                });
+    if (resource['downloadUrl']) {
+        return gapiutils.download(resource['downloadUrl']);
+    } else if (already_picked) {
+        if (opt_num_tries == 0) {
+          return Promise.reject(new Error('Max retries of file load reached'));
         }
-    };
+        var request = gapi.client.drive.files.get({ 'fileId': resource['id'] });
+        var reply = gapiutils.execute(request);
+        var delay = GET_CONTENTS_INITIAL_DELAY *
+            Math.pow(GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR, GET_CONTENTS_MAX_TRIES - opt_num_tries);
+        var delayed_reply = new Promise(function(resolve, reject) {
+            window.setTimeout(function() {
+                resolve(reply);
+            }, delay);
+        });
+        return delayed_reply.then(function(new_resource) {
+            return get_contents(new_resource, true, opt_num_tries - 1);
+        });
+    } else {
+        // If downloadUrl field is missing, this means that we do not have
+        // access to the file using drive.file scope.  Therefore we prompt
+        // the user to open a FilePicker window that allows them to indicate
+        // to Google Drive that they intend to open that file with this
+        // app.
+        console.log('resource:', resource)
+        return pickerutils.pick_file(resource.parents[0]['id'], resource['title'])
+            .then(function() {
+              return get_contents(resource, true, GET_CONTENTS_MAX_TRIES);
+            });
+    }
+};
 
     /**
      * Fetch user avatar url and put it in the header
