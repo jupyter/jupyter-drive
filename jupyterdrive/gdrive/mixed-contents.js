@@ -4,12 +4,14 @@
 //
 define(["require", "exports", 'jquery', "base/js/utils"], function (require, exports, $, utils) {
     /** Enum for object types */
-    var ArgType = {
-        PATH: 1,
-        FILE: 2,
-        LIST: 3,
-        OTHER: 4
-    };
+    (function (ArgType) {
+        ArgType[ArgType["PATH"] = 1] = "PATH";
+        ArgType[ArgType["FILE"] = 2] = "FILE";
+        ArgType[ArgType["LIST"] = 3] = "LIST";
+        ArgType[ArgType["OTHER"] = 4] = "OTHER";
+    })(exports.ArgType || (exports.ArgType = {}));
+    var ArgType = exports.ArgType;
+    ;
     var _default = { "schema": [
         {
             "root": "local",
@@ -35,11 +37,11 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
             //      Dictionary of keyword arguments.
             //          base_url: string
             // Generate a map from root directories, to Contents instances.
-            this.config = options.common_config;
-            this.filesystem = this.config.loaded.then($.proxy(function () {
-                var local_config = this.config.data['mixed_contents'];
+            this._config = options.common_config;
+            this._filesystem = this._config.loaded.then($.proxy(function () {
+                var local_config = this._config.data['mixed_contents'];
                 if (!local_config) {
-                    this.config.update({ 'mixed_contents': _default });
+                    this._config.update({ 'mixed_contents': _default });
                 }
                 var schema = (local_config || _default)['schema'];
                 return Promise.all(schema.map(function (fs) {
@@ -130,6 +132,7 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
          */
         Contents.prototype._to_virtual_file = function (root, file) {
             file['path'] = this._to_virtual_path(root, file['path']);
+            ;
             return file;
         };
         /**
@@ -144,13 +147,13 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
             return list;
         };
         Contents.prototype._to_virtual = function (root, type, object) {
-            if (type === ArgType.PATH) {
+            if (type === 1 /* PATH */) {
                 return this._to_virtual_path(root, object);
             }
-            else if (type === ArgType.FILE) {
+            else if (type === 2 /* FILE */) {
                 return this._to_virtual_file(root, object);
             }
-            else if (type === ArgType.LIST) {
+            else if (type === 3 /* LIST */) {
                 return this._to_virtual_list(root, object);
             }
             else {
@@ -158,13 +161,13 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
             }
         };
         Contents.prototype.from_virtual = function (root, type, object, config) {
-            if (type === ArgType.PATH) {
+            if (type === 1 /* PATH */) {
                 return this.from_virtual_path(root, object, config);
             }
-            else if (type === ArgType.FILE) {
+            else if (type === 2 /* FILE */) {
                 throw "from_virtual_file not implemented";
             }
-            else if (type === ArgType.LIST) {
+            else if (type === 3 /* LIST */) {
                 throw "from_virtual_list not implemented";
             }
             else {
@@ -178,10 +181,10 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
          * @param {Array} return_types Type of the return value of the function
          * @param {Array} args the arguments to apply
          */
-        Contents.prototype.route_function = function (method_name, arg_types, return_type, args) {
+        Contents.prototype._route_function = function (method_name, arg_types, return_type, args) {
             var _this = this;
-            return this.filesystem.then(function (filesystem) {
-                if (arg_types.length == 0 || arg_types[0] != ArgType.PATH) {
+            return this._filesystem.then(function (filesystem) {
+                if (arg_types.length == 0 || arg_types[0] != 1 /* PATH */) {
                     throw 'unexpected value of arg_types';
                 }
                 var root = _this.get_fs_root(filesystem, args[0]);
@@ -194,7 +197,7 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
                     }
                 }
                 for (var i = 0; i < args.length; i++) {
-                    args[i] = _this.from_virtual(root, arg_types[i], args[i], _this.config.data['mixed_contents']['schema']);
+                    args[i] = _this.from_virtual(root, arg_types[i], args[i], _this._config.data['mixed_contents']['schema']);
                 }
                 var contents = filesystem[root];
                 return contents[method_name].apply(contents, args).then($.proxy(_this._to_virtual, _this, root, return_type));
@@ -204,37 +207,37 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
          * File management functions
          */
         Contents.prototype.get = function (path, type, options) {
-            return this.route_function('get', [ArgType.PATH, ArgType.OTHER, ArgType.OTHER], ArgType.FILE, arguments);
+            return this._route_function('get', [1 /* PATH */, 4 /* OTHER */, 4 /* OTHER */], 2 /* FILE */, arguments);
         };
         Contents.prototype.new_untitled = function (path, options) {
-            return this.route_function('new_untitled', [ArgType.PATH, ArgType.OTHER], ArgType.FILE, arguments);
+            return this._route_function('new_untitled', [1 /* PATH */, 4 /* OTHER */], 2 /* FILE */, arguments);
         };
         Contents.prototype.delete = function (path) {
-            return this.route_function('delete', [ArgType.PATH], ArgType.OTHER, arguments);
+            return this._route_function('delete', [1 /* PATH */], 4 /* OTHER */, arguments);
         };
         Contents.prototype.rename = function (path, new_path) {
-            return this.route_function('rename', [ArgType.PATH, ArgType.PATH], ArgType.FILE, arguments);
+            return this._route_function('rename', [1 /* PATH */, 1 /* PATH */], 2 /* FILE */, arguments);
         };
         Contents.prototype.save = function (path, model, options) {
-            return this.route_function('save', [ArgType.PATH, ArgType.OTHER, ArgType.OTHER], ArgType.FILE, arguments);
+            return this._route_function('save', [1 /* PATH */, 4 /* OTHER */, 4 /* OTHER */], 2 /* FILE */, arguments);
         };
         Contents.prototype.list_contents = function (path, options) {
-            return this.route_function('list_contents', [ArgType.PATH, ArgType.OTHER], ArgType.LIST, arguments);
+            return this._route_function('list_contents', [1 /* PATH */, 4 /* OTHER */], 3 /* LIST */, arguments);
         };
         Contents.prototype.copy = function (from_file, to_dir) {
-            return this.route_function('copy', [ArgType.PATH, ArgType.PATH], ArgType.FILE, arguments);
+            return this._route_function('copy', [1 /* PATH */, 1 /* PATH */], 2 /* FILE */, arguments);
         };
         /**
          * Checkpointing Functions
          */
         Contents.prototype.create_checkpoint = function (path, options) {
-            return this.route_function('create_checkpoint', [ArgType.PATH, ArgType.OTHER], ArgType.OTHER, arguments);
+            return this._route_function('create_checkpoint', [1 /* PATH */, 4 /* OTHER */], 4 /* OTHER */, arguments);
         };
         Contents.prototype.restore_checkpoint = function (path, checkpoint_id, options) {
-            return this.route_function('restore_checkpoint', [ArgType.PATH, ArgType.OTHER, ArgType.OTHER], ArgType.OTHER, arguments);
+            return this._route_function('restore_checkpoint', [1 /* PATH */, 4 /* OTHER */, 4 /* OTHER */], 4 /* OTHER */, arguments);
         };
         Contents.prototype.list_checkpoints = function (path, options) {
-            return this.route_function('list_checkpoints', [ArgType.PATH, ArgType.OTHER], ArgType.OTHER, arguments);
+            return this._route_function('list_checkpoints', [1 /* PATH */, 4 /* OTHER */], 4 /* OTHER */, arguments);
         };
         return Contents;
     })();

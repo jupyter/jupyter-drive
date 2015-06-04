@@ -16,7 +16,7 @@ upload: dist
 	twine upload dist/*
 
 
-docs:
+docs: jupyterdrive/ts/*.ts
 	typedoc --out docs --mode file --externalPattern 'typings/*' jupyterdrive/ts/* typings/* --module amd
 
 

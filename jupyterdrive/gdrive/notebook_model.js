@@ -1,3 +1,8 @@
+// Copyright (c) IPython Development Team.
+// Distributed under the terms of the Modified BSD License.
+//
+//
+//
 define(["require", "exports"], function (require, exports) {
     /**
      * Functions related to the Notebook JSON representation
@@ -34,7 +39,7 @@ define(["require", "exports"], function (require, exports) {
      * Creates a JSON notebook representation from the contents of a file.
      * @param {String} contents The contents of the file, as a string.
      * @return {Object} a JSON representation of the notebook.
-     */
+         */
     exports.notebook_from_file_contents = function (contents) {
         var notebook = JSON.parse(contents);
         var unsplit_lines = function (multiline_string) {
@@ -51,7 +56,7 @@ define(["require", "exports"], function (require, exports) {
     /**
      * Creates the contents of a file from a JSON notebook representation.
      * @param {Object} notebook a JSON representation of the notebook.
-     * @return {Object} The JSON representation with lines split.
+     * @return {string} The JSON representation with lines split.
      */
     exports.file_contents_from_notebook = function (notebook) {
         var notebook_copy = JSON.parse(JSON.stringify(notebook));
@@ -69,7 +74,7 @@ define(["require", "exports"], function (require, exports) {
             });
         };
         transform_notebook(notebook, split_lines);
-        return notebook_copy;
+        return JSON.stringify(notebook_copy);
     };
     /**
      * Create a JSON representation of a new notebook

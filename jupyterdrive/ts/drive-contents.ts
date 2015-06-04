@@ -1,6 +1,7 @@
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
 //
+"use strict";
 import $ = require('jquery');
 import utils = require('base/js/utils');
 import dialog = require('base/js/dialog');
@@ -9,19 +10,23 @@ import driveutils = require('./driveutils');
 import notebook_model = require('./notebook_model');
 import iface = require('content-interface');
 
-
+import Notebook = notebook_model.Notebook;
+import Path = iface.Path
+import IContents = iface.IContents
+import CheckpointId = iface.CheckpointId
 
 declare var gapi;
 
-    /**
-     * Takes a contents model and converts it into metadata and bytes for
-     * Google Drive upload.
-     */
-var contents_model_to_metadata_and_bytes = function(model) {
+/**
+ * Takes a contents model and converts it into metadata and bytes for
+ * Google Drive upload.
+ */
+var contents_model_to_metadata_and_bytes = function(model):[any, string] {
     var content = model.content;
     var mimetype = model.mimetype;
     var format = model.format;
     if (model['type'] === 'notebook') {
+        // This seem to be wrong content is Notebook here. string below
         content = notebook_model.file_contents_from_notebook(content);
         format = 'json';
         mimetype = driveutils.NOTEBOOK_MIMETYPE;
@@ -34,8 +39,9 @@ var contents_model_to_metadata_and_bytes = function(model) {
         throw ("Unrecognized type " + model['type']);
     }
 
-    // Set mimetype according to format if it's not set
+    // Set mime type according to format if it's not set
     if (format == 'json') {
+        // This seem to be wrong content is String Here, Notebook above
         content = JSON.stringify(content);
         mimetype = mimetype || 'application/json';
     } else if (format == 'base64') {
@@ -53,11 +59,12 @@ var contents_model_to_metadata_and_bytes = function(model) {
 
     return [metadata, content];
 }
+
+
 /**
- * Converts a Google Drive files resource, (see
- * https://developers.google.com/drive/v2/reference/files)
- * to an IPEP 27 contents model (see
- * https://github.com/ipython/ipython/wiki/IPEP-27:-Contents-Service)
+ * Converts a Google Drive files resource, (see https://developers.google.com/drive/v2/reference/files)
+ * to an IPEP 27 contents model (see https://github.com/ipython/ipython/wiki/IPEP-27:-Contents-Service)
+ *
  * Note that files resources can represent files or directories.
  *
  * TODO: check that date formats are the same, and either
@@ -67,9 +74,8 @@ var contents_model_to_metadata_and_bytes = function(model) {
  * @param {Object} resource Google Drive files resource
  * @return {Object} IPEP 27 compliant contents model
  */
-
-// TODO remove contents
-var files_resource_to_contents_model = function(path, resource, content?) {
+// TODO remove contents ?
+var files_resource_to_contents_model = function(path:Path, resource, content?) {
     var title = resource['title'];
     var mimetype = resource['mimeType'];
 
@@ -101,33 +107,46 @@ var files_resource_to_contents_model = function(path, resource, content?) {
     };
 };
 
-export class Contents implements iface.IContents { 
 
-    base_url:string;
-    config:any;
-    last_observed_revision:any;
 
+/**
+ *
+ * Implement a contents manager that talks to Google Drive.  Expose itself also
+ * as `Contents` to be able to by transparently dynamically loaded and replace
+ * any other contents manager that expose the `IContents` interface.
+ *
+ * For a higher level description on how to use these interfaces, see the
+ * `IContents` interface docs
+ *
+ **/
+export class GoogleDriveContents implements IContents { 
+
+    private _base_url:string;
+    private _config:any;
+    private _last_observed_revision:any;
+
+    /**
+     *
+     * A contentmanager handles passing file operations
+     * to the back-end.  This includes checkpointing
+     * with the normal file operations.
+     *
+     * Parameters:
+     *  options: dictionary
+     *      Dictionary of keyword arguments.
+     *          base_url: string
+     **/
     constructor(options) {
-        // Constructor
-        //
-        // A contentmanager handles passing file operations
-        // to the back-end.  This includes checkpointing
-        // with the normal file operations.
-        //
-        // Parameters:
-        //  options: dictionary
-        //      Dictionary of keyword arguments.
-        //          base_url: string
-        this.base_url = options.base_url;
-        this.config  = options.common_config;
+        this._base_url = options.base_url;
+        this._config  = options.common_config;
         /**
          * Stores the revision id from the last save or load.  This is used
          * when checking if a file has been modified by another user.
          */
-        this.last_observed_revision = {};
+        this._last_observed_revision = {};
         var that = this;
-        this.config.loaded.then(function(data){
-          gapiutils.config(that.config);
+        this._config.loaded.then((data) => {
+          gapiutils.config(this._config);
           gapiutils.gapi_ready.then(driveutils.set_user_info);
         })
 
@@ -147,8 +166,8 @@ export class Contents implements iface.IContents {
      *
      * @param {resource} resource_prm a Google Drive file resource.
      */
-    observe_file_resource(resource) {
-        this.last_observed_revision[resource['id']] = resource['headRevisionId'];
+    private _observe_file_resource(resource) {
+        this._last_observed_revision[resource['id']] = resource['headRevisionId'];
     }
 
 
@@ -159,7 +178,7 @@ export class Contents implements iface.IContents {
      * @param {Object} model The IPython model object to be saved
      * @return {Promise} A promise fullfilled with the resource of the saved file.
      */
-    save_existing(resource, model) {
+    private _save_existing(resource, model) {
         var that = this;
         var converted = contents_model_to_metadata_and_bytes(model);
         var contents = converted[1];
@@ -167,7 +186,7 @@ export class Contents implements iface.IContents {
             return driveutils.upload_to_drive(contents, undefined, resource['id']);
         };
         if (resource['headRevisionId'] !=
-            that.last_observed_revision[resource['id']]) {
+            that._last_observed_revision[resource['id']]) {
             // The revision id of the files resource does not match the
             // cached revision id for this file.  This implies that the
             // file has been modified by another user/tab during this
@@ -197,7 +216,7 @@ export class Contents implements iface.IContents {
      * @param {Object} model The IPython model object to be saved
      * @return {Promise} A promise fullfilled with the resource of the saved file.
      */
-    upload_new(folder_id, model) {
+    private _upload_new(folder_id, model) {
         var that = this;
 
         var converted = contents_model_to_metadata_and_bytes(model);
@@ -215,24 +234,12 @@ export class Contents implements iface.IContents {
     /**
      * Notebook Functions
      */
-
-    /**
-     * Load a notebook.
-     *
-     * Calls success_callback with notebook JSON object (as string), or
-     * options.error with error.
-     *
-     * @method load_notebook
-     * @param {String} path
-     * @param {String} name
-     * @param {Object} options
-     */
-    get(path, options) {
+    get(path:Path, options:any) {
         var that = this;
         var metadata_prm = gapiutils.gapi_ready.then(
             $.proxy(driveutils.get_resource_for_path, this, path, driveutils.FileType.FILE));
         var contents_prm = metadata_prm.then(function(resource) {
-            that.observe_file_resource(resource);
+            that._observe_file_resource(resource);
             return driveutils.get_contents(resource, false);
         });
 
@@ -248,13 +255,12 @@ export class Contents implements iface.IContents {
     /**
      * Creates a new untitled file or directory in the specified directory path.
      *
-     * @method new
      * @param {String} path: the directory in which to create the new file/directory
      * @param {Object} options:
      *      ext: file extension to use
      *      type: model type to create ('notebook', 'file', or 'directory')
      */
-    new_untitled(path, options) {
+    new_untitled(path:Path, options) {
         // Construct all data needed to upload file
         var default_ext = '';
         var base_name = '';
@@ -288,25 +294,24 @@ export class Contents implements iface.IContents {
             return Promise.reject(new Error("Unrecognized type " + options['type']));
         }
 
-        var that = this;
         var folder_id_prm = gapiutils.gapi_ready
             .then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FOLDER))
         var filename_prm = folder_id_prm.then(function(resource){
             return driveutils.get_new_filename(resource, options['ext'] || default_ext, base_name);
         });
-        return Promise.all([folder_id_prm, filename_prm]).then(function(values) {
+        return Promise.all([folder_id_prm, filename_prm]).then((values) => {
             var folder_id = values[0];
             var filename = values[1];
             model['name'] = filename;
-            return that.upload_new(folder_id, model);
+            return this._upload_new(folder_id, model);
         })
         .then(function(resource) {
-            var fullpath = utils.url_path_join(path, resource['title']);
+            var fullpath = <Path>utils.url_path_join(<string>path, <string>resource['title']);
             return files_resource_to_contents_model(fullpath, resource);
         });
     }
 
-    delete(path) {
+    delete(path:Path) {
         return gapiutils.gapi_ready
         .then(function() {
             return driveutils.get_id_for_path(path, driveutils.FileType.FILE);
@@ -316,7 +321,7 @@ export class Contents implements iface.IContents {
         });
     }
 
-    rename(path, new_path) {
+    rename(path:Path, new_path:Path) {
         var that = this;
         // Rename is only possible when path and new_path differ except in
         // their last component, so check this first.
@@ -324,8 +329,8 @@ export class Contents implements iface.IContents {
         var new_path_components = driveutils.split_path(new_path);
 
         var base_path = [];
-        var name = '';
-        var new_name = '';
+        var name:Path;
+        var new_name:Path;
         if (path_components.length != new_path_components.length) {
             return Promise.reject(new Error('Rename cannot change path'));
         }
@@ -356,7 +361,7 @@ export class Contents implements iface.IContents {
             return gapiutils.execute(request);
         })
         .then(function(resource) {
-            that.observe_file_resource(resource);
+            that._observe_file_resource(resource);
             return files_resource_to_contents_model(new_path, resource);
         });
     }
@@ -366,16 +371,16 @@ export class Contents implements iface.IContents {
      * If the resource has been modifeied on Drive in the
      * meantime, prompt user for overwrite.
      **/
-    save(path:string, model) {
+    save(path:Path, model, options?:any) {
         var that = this;
-        var path_and_filename = utils.url_path_split(path);
+        var path_and_filename = <Path[]>utils.url_path_split(<string>path);
         var path = path_and_filename[0];
         var filename = path_and_filename[1];
-        return driveutils.get_resource_for_path(path, driveutils.FileType.FOLDER)
+        return driveutils.get_resource_for_path(<string>path, driveutils.FileType.FOLDER)
         .then(function(folder_resource) {
             return driveutils.get_resource_for_relative_path(filename, driveutils.FileType.FILE, false, folder_resource['id'])
             .then(function(file_resource) {
-                return that.save_existing(file_resource, model)
+                return that._save_existing(file_resource, model)
             }, function(error) {
                 // If the file does not exist (but the directory does) then a
                 // new file must be uploaded.
@@ -383,17 +388,17 @@ export class Contents implements iface.IContents {
                     return Promise.reject(error);
                 }
                 model['name'] = filename;
-                return that.upload_new(folder_resource['id'], model)
+                return that._upload_new(folder_resource['id'], model)
             });
         })
         .then(function(file_resource) {
-            that.observe_file_resource(file_resource);
+            that._observe_file_resource(file_resource);
             return files_resource_to_contents_model(path, file_resource);
         });
     }
 
 
-    copy(path, model) {
+    copy(path:Path, model) {
         return Promise.reject(new Error('Copy not implemented yet.'));
     }
 
@@ -403,12 +408,12 @@ export class Contents implements iface.IContents {
 
     // NOTE: it would be better modify the API to combine create_checkpoint with
     // save
-    create_checkpoint(path, options) {
+    create_checkpoint(path:Path, options:any) {
         var that = this;
         return gapiutils.gapi_ready
         .then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FILE))
         .then(function(file_id) {
-            var revision_id = that.last_observed_revision[file_id];
+            var revision_id = that._last_observed_revision[file_id];
             if (!revision_id) {
                 return Promise.reject(new Error('File must be saved before checkpointing'));
             }
@@ -429,7 +434,7 @@ export class Contents implements iface.IContents {
         });
     }
 
-    restore_checkpoint(path, checkpoint_id, options) {
+    restore_checkpoint(path:Path, checkpoint_id:CheckpointId, options) {
         var file_id_prm = gapiutils.gapi_ready
         .then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FILE))
 
@@ -452,7 +457,7 @@ export class Contents implements iface.IContents {
         });
     }
 
-    list_checkpoints(path, options) {
+    list_checkpoints(path:Path, options) {
         return gapiutils.gapi_ready
         .then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FILE))
         .then(function(file_id) {
@@ -493,7 +498,7 @@ export class Contents implements iface.IContents {
      *     success: success callback
      *     error: error callback
      */
-    list_contents(path, options) {
+    list_contents(path:Path, options):Promise<any>{
         var that = this;
         return gapiutils.gapi_ready
         .then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FOLDER))
@@ -531,7 +536,7 @@ export class Contents implements iface.IContents {
         })
         .then(function(items) {
             var list = $.map(items, function(resource) {
-                var fullpath = utils.url_path_join(path, resource['title']);
+                var fullpath = <Path>utils.url_path_join(<string>path, resource['title']);
                 return files_resource_to_contents_model(fullpath, resource)
             });
             return {content: list};
@@ -540,3 +545,5 @@ export class Contents implements iface.IContents {
 
 
 }
+
+export var Contents = GoogleDriveContents

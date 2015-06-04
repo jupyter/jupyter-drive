@@ -56,9 +56,7 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
      * Split a path into path components
      */
     exports.split_path = function (path) {
-        return path.split('/').filter(function (c) {
-            return c;
-        });
+        return path.split('/');
     };
     /**
      * Gets the Google Drive Files resource corresponding to a path.  The path

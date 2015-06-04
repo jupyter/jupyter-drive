@@ -6,6 +6,10 @@ import $ =     require('jquery');
 import gapiutils = require('./gapiutils');
 import pickerutils = require('./pickerutils');
 
+
+import iface = require('content-interface');
+import Path = iface.Path
+
 export var FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
 
 export var NOTEBOOK_MIMETYPE = 'application/ipynb';
@@ -21,21 +25,21 @@ export var FileType = {
     };
 
 
-    /**
-     * Obtains the Google Drive Files resource for a file or folder relative
-     * to the a given folder.  The path should be a file or a subfolder, and
-     * should not contain multiple levels of folders (hence the name
-     * path_component).  It should also not contain any leading or trailing
-     * slashes.
-     *
-     * @param {String} path_component The file/folder to find
-     * @param {FileType} type type of resource (file or folder)
-     * @param {boolean} opt_child_resource If True, fetches a child resource
-     *     which is smaller and probably quicker to obtain the a Files resource.
-     * @param {String} folder_id The Google Drive folder id
-     * @return A promise fullfilled by either the files resource for the given
-     *     file/folder, or rejected with an Error object.
-     */
+/**
+ * Obtains the Google Drive Files resource for a file or folder relative
+ * to the a given folder.  The path should be a file or a subfolder, and
+ * should not contain multiple levels of folders (hence the name
+ * path_component).  It should also not contain any leading or trailing
+ * slashes.
+ *
+ * @param {String} path_component The file/folder to find
+ * @param {FileType} type type of resource (file or folder)
+ * @param {boolean} opt_child_resource If True, fetches a child resource
+ *     which is smaller and probably quicker to obtain the a Files resource.
+ * @param {String} folder_id The Google Drive folder id
+ * @return A promise fullfilled by either the files resource for the given
+ *     file/folder, or rejected with an Error object.
+ */
 export var get_resource_for_relative_path = function(path_component, type, opt_child_resource, folder_id) {
         var query = 'title = \'' + path_component + '\' and trashed = false ';
         if (type == FileType.FOLDER) {
@@ -66,12 +70,12 @@ export var get_resource_for_relative_path = function(path_component, type, opt_c
     };
 
 
-    /**
-     * Split a path into path components
-     */
-export var split_path = function(path) {
-        return path.split('/').filter(function(c) { return c;});
-    };
+/**
+ * Split a path into path components
+ */
+export var split_path = function(path:Path):Path[] {
+    return path.split('/');
+};
 
 
     /**

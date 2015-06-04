@@ -1,6 +1,7 @@
 var ts = require('gulp-typescript');
 var gulp = require('gulp');
 var watch = require('gulp-watch');
+var concat = require('gulp-concat');
 var merge = require('merge2');
 
 var tsProject = ts.createProject({
@@ -34,4 +35,20 @@ gulp.task('js', function() {
         tsResult.dts.pipe(gulp.dest('jupyterdrive/gdrive')),
         tsResult.js.pipe(gulp.dest('jupyterdrive/gdrive'))
     ]);
+});
+
+var typedoc = require('gulp-typedoc');
+gulp.task('docs', function() {
+  return gulp.src(['./jupyterdrive/ts/*.ts',
+    'typings/requirejs/*',
+    //'typings/ipython/*',
+    //'typings/jquery/*',
+    'typings/es6-promise/*',])
+    .pipe(typedoc({
+      module: "commonjs", 
+      out: './docs',
+      name: 'Jupyter drive',
+      target: 'ES5',
+      mode: 'file',
+      includeDeclarations: true }));
 });

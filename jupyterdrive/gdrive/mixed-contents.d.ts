@@ -1,13 +1,26 @@
 import iface = require('content-interface');
+import IContents = iface.IContents;
+import Path = iface.Path;
+import CheckpointId = iface.CheckpointId;
+/** Enum for object types */
+export declare enum ArgType {
+    PATH = 1,
+    FILE = 2,
+    LIST = 3,
+    OTHER = 4,
+}
 export interface File {
-    path: string;
+    path: Path;
 }
 export interface FileList {
     contents: any;
 }
-export declare class Contents implements iface.IContents {
-    config: any;
-    filesystem: any;
+export interface FileSystem extends Object {
+    then?: any;
+}
+export declare class Contents implements IContents {
+    private _config;
+    private _filesystem;
     constructor(options: any);
     /**
      * Generates the object that represents a filesystem
@@ -24,7 +37,7 @@ export declare class Contents implements iface.IContents {
      * @param {String} path The path to check.
      * @return {String} The root path for the contents instance.
      */
-    get_fs_root(filesystem: string, path: string): string;
+    get_fs_root(filesystem: FileSystem, path: Path): Path;
     /**
      * Convert a path from the virtual filesystem used by the front end, to the
      * concrete filesystem used by the Contents instance.
@@ -33,7 +46,7 @@ export declare class Contents implements iface.IContents {
      * @return {String} the converted path
      *
      */
-    from_virtual_path(root: string, path: string, config: any): string;
+    from_virtual_path(root: Path, path: Path, config: any): Path;
     /**
      * Convert a path to the virtual filesystem used by the front end, from the
      * concrete filesystem used by the Contents instance.
@@ -60,7 +73,7 @@ export declare class Contents implements iface.IContents {
      */
     private _to_virtual_list(root, list);
     private _to_virtual(root, type, object);
-    from_virtual(root: string, type: any, object: any, config: any): any;
+    from_virtual(root: Path, type: ArgType, object: any, config: any): any;
     /**
      * Route a function to the appropriate content manager class
      * @param {string} method_name Name of the method being called
@@ -68,21 +81,21 @@ export declare class Contents implements iface.IContents {
      * @param {Array} return_types Type of the return value of the function
      * @param {Array} args the arguments to apply
      */
-    route_function(method_name: any, arg_types: any, return_type: any, args: any): any;
+    private _route_function(method_name, arg_types, return_type, args);
     /**
      * File management functions
      */
-    get(path: any, type: any, options: any): any;
-    new_untitled(path: string, options: any): any;
-    delete(path: any): any;
-    rename(path: any, new_path: any): any;
-    save(path: any, model: any, options: any): any;
-    list_contents(path: any, options: any): any;
-    copy(from_file: any, to_dir: any): any;
+    get(path: Path, type: ArgType, options: any): any;
+    new_untitled(path: Path, options: any): any;
+    delete(path: Path): any;
+    rename(path: Path, new_path: Path): any;
+    save(path: Path, model: any, options: any): any;
+    list_contents(path: Path, options: any): any;
+    copy(from_file: Path, to_dir: Path): any;
     /**
      * Checkpointing Functions
      */
-    create_checkpoint(path: any, options: any): any;
-    restore_checkpoint(path: any, checkpoint_id: any, options: any): any;
-    list_checkpoints(path: any, options: any): any;
+    create_checkpoint(path: Path, options: any): any;
+    restore_checkpoint(path: Path, checkpoint_id: CheckpointId, options: any): any;
+    list_checkpoints(path: Path, options: any): any;
 }

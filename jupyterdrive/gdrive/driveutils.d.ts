@@ -1,3 +1,4 @@
+import iface = require('content-interface');
 export declare var FOLDER_MIME_TYPE: string;
 export declare var NOTEBOOK_MIMETYPE: string;
 export declare var MULTIPART_BOUNDARY: string;
@@ -25,7 +26,7 @@ export declare var get_resource_for_relative_path: (path_component: any, type: a
 /**
  * Split a path into path components
  */
-export declare var split_path: (path: any) => any;
+export declare var split_path: (path: iface.Path) => iface.Path[];
 /**
  * Gets the Google Drive Files resource corresponding to a path.  The path
  * is always treated as an absolute path, no matter whether it contains

@@ -1,3 +1,7 @@
+// Copyright (c) IPython Development Team.
+// Distributed under the terms of the Modified BSD License.
+//
+"use strict";
 define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './gapiutils', './driveutils', './notebook_model'], function (require, exports, $, utils, dialog, gapiutils, driveutils, notebook_model) {
     /**
      * Takes a contents model and converts it into metadata and bytes for
@@ -8,6 +12,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
         var mimetype = model.mimetype;
         var format = model.format;
         if (model['type'] === 'notebook') {
+            // This seem to be wrong content is Notebook here. string below
             content = notebook_model.file_contents_from_notebook(content);
             format = 'json';
             mimetype = driveutils.NOTEBOOK_MIMETYPE;
@@ -22,8 +27,9 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
         else {
             throw ("Unrecognized type " + model['type']);
         }
-        // Set mimetype according to format if it's not set
+        // Set mime type according to format if it's not set
         if (format == 'json') {
+            // This seem to be wrong content is String Here, Notebook above
             content = JSON.stringify(content);
             mimetype = mimetype || 'application/json';
         }
@@ -43,10 +49,9 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
         return [metadata, content];
     };
     /**
-     * Converts a Google Drive files resource, (see
-     * https://developers.google.com/drive/v2/reference/files)
-     * to an IPEP 27 contents model (see
-     * https://github.com/ipython/ipython/wiki/IPEP-27:-Contents-Service)
+     * Converts a Google Drive files resource, (see https://developers.google.com/drive/v2/reference/files)
+     * to an IPEP 27 contents model (see https://github.com/ipython/ipython/wiki/IPEP-27:-Contents-Service)
+     *
      * Note that files resources can represent files or directories.
      *
      * TODO: check that date formats are the same, and either
@@ -56,7 +61,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
      * @param {Object} resource Google Drive files resource
      * @return {Object} IPEP 27 compliant contents model
      */
-    // TODO remove contents
+    // TODO remove contents ?
     var files_resource_to_contents_model = function (path, resource, content) {
         var title = resource['title'];
         var mimetype = resource['mimeType'];
@@ -88,28 +93,40 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
             writable: resource['editable']
         };
     };
-    var Contents = (function () {
-        function Contents(options) {
-            // Constructor
-            //
-            // A contentmanager handles passing file operations
-            // to the back-end.  This includes checkpointing
-            // with the normal file operations.
-            //
-            // Parameters:
-            //  options: dictionary
-            //      Dictionary of keyword arguments.
-            //          base_url: string
-            this.base_url = options.base_url;
-            this.config = options.common_config;
+    /**
+     *
+     * Implement a contents manager that talks to Google Drive.  Expose itself also
+     * as `Contents` to be able to by transparently dynamically loaded and replace
+     * any other contents manager that expose the `IContents` interface.
+     *
+     * For a higher level description on how to use these interfaces, see the
+     * `IContents` interface docs
+     *
+     **/
+    var GoogleDriveContents = (function () {
+        /**
+         *
+         * A contentmanager handles passing file operations
+         * to the back-end.  This includes checkpointing
+         * with the normal file operations.
+         *
+         * Parameters:
+         *  options: dictionary
+         *      Dictionary of keyword arguments.
+         *          base_url: string
+         **/
+        function GoogleDriveContents(options) {
+            var _this = this;
+            this._base_url = options.base_url;
+            this._config = options.common_config;
             /**
              * Stores the revision id from the last save or load.  This is used
              * when checking if a file has been modified by another user.
              */
-            this.last_observed_revision = {};
+            this._last_observed_revision = {};
             var that = this;
-            this.config.loaded.then(function (data) {
-                gapiutils.config(that.config);
+            this._config.loaded.then(function (data) {
+                gapiutils.config(_this._config);
                 gapiutils.gapi_ready.then(driveutils.set_user_info);
             });
         }
@@ -126,8 +143,8 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          *
          * @param {resource} resource_prm a Google Drive file resource.
          */
-        Contents.prototype.observe_file_resource = function (resource) {
-            this.last_observed_revision[resource['id']] = resource['headRevisionId'];
+        GoogleDriveContents.prototype._observe_file_resource = function (resource) {
+            this._last_observed_revision[resource['id']] = resource['headRevisionId'];
         };
         /**
          * Saves a version of an existing file on drive
@@ -135,14 +152,14 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          * @param {Object} model The IPython model object to be saved
          * @return {Promise} A promise fullfilled with the resource of the saved file.
          */
-        Contents.prototype.save_existing = function (resource, model) {
+        GoogleDriveContents.prototype._save_existing = function (resource, model) {
             var that = this;
             var converted = contents_model_to_metadata_and_bytes(model);
             var contents = converted[1];
             var save = function () {
                 return driveutils.upload_to_drive(contents, undefined, resource['id']);
             };
-            if (resource['headRevisionId'] != that.last_observed_revision[resource['id']]) {
+            if (resource['headRevisionId'] != that._last_observed_revision[resource['id']]) {
                 // The revision id of the files resource does not match the
                 // cached revision id for this file.  This implies that the
                 // file has been modified by another user/tab during this
@@ -172,7 +189,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          * @param {Object} model The IPython model object to be saved
          * @return {Promise} A promise fullfilled with the resource of the saved file.
          */
-        Contents.prototype.upload_new = function (folder_id, model) {
+        GoogleDriveContents.prototype._upload_new = function (folder_id, model) {
             var that = this;
             var converted = contents_model_to_metadata_and_bytes(model);
             var metadata = converted[0];
@@ -188,22 +205,11 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
         /**
          * Notebook Functions
          */
-        /**
-         * Load a notebook.
-         *
-         * Calls success_callback with notebook JSON object (as string), or
-         * options.error with error.
-         *
-         * @method load_notebook
-         * @param {String} path
-         * @param {String} name
-         * @param {Object} options
-         */
-        Contents.prototype.get = function (path, options) {
+        GoogleDriveContents.prototype.get = function (path, options) {
             var that = this;
             var metadata_prm = gapiutils.gapi_ready.then($.proxy(driveutils.get_resource_for_path, this, path, driveutils.FileType.FILE));
             var contents_prm = metadata_prm.then(function (resource) {
-                that.observe_file_resource(resource);
+                that._observe_file_resource(resource);
                 return driveutils.get_contents(resource, false);
             });
             return Promise.all([metadata_prm, contents_prm]).then(function (values) {
@@ -216,13 +222,13 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
         /**
          * Creates a new untitled file or directory in the specified directory path.
          *
-         * @method new
          * @param {String} path: the directory in which to create the new file/directory
          * @param {Object} options:
          *      ext: file extension to use
          *      type: model type to create ('notebook', 'file', or 'directory')
          */
-        Contents.prototype.new_untitled = function (path, options) {
+        GoogleDriveContents.prototype.new_untitled = function (path, options) {
+            var _this = this;
             // Construct all data needed to upload file
             var default_ext = '';
             var base_name = '';
@@ -258,7 +264,6 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
             else {
                 return Promise.reject(new Error("Unrecognized type " + options['type']));
             }
-            var that = this;
             var folder_id_prm = gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FOLDER));
             var filename_prm = folder_id_prm.then(function (resource) {
                 return driveutils.get_new_filename(resource, options['ext'] || default_ext, base_name);
@@ -267,28 +272,28 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
                 var folder_id = values[0];
                 var filename = values[1];
                 model['name'] = filename;
-                return that.upload_new(folder_id, model);
+                return _this._upload_new(folder_id, model);
             }).then(function (resource) {
                 var fullpath = utils.url_path_join(path, resource['title']);
                 return files_resource_to_contents_model(fullpath, resource);
             });
         };
-        Contents.prototype.delete = function (path) {
+        GoogleDriveContents.prototype.delete = function (path) {
             return gapiutils.gapi_ready.then(function () {
                 return driveutils.get_id_for_path(path, driveutils.FileType.FILE);
             }).then(function (file_id) {
                 return gapiutils.execute(gapi.client.drive.files.delete({ 'fileId': file_id }));
             });
         };
-        Contents.prototype.rename = function (path, new_path) {
+        GoogleDriveContents.prototype.rename = function (path, new_path) {
             var that = this;
             // Rename is only possible when path and new_path differ except in
             // their last component, so check this first.
             var path_components = driveutils.split_path(path);
             var new_path_components = driveutils.split_path(new_path);
             var base_path = [];
-            var name = '';
-            var new_name = '';
+            var name;
+            var new_name;
             if (path_components.length != new_path_components.length) {
                 return Promise.reject(new Error('Rename cannot change path'));
             }
@@ -316,7 +321,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
                 });
                 return gapiutils.execute(request);
             }).then(function (resource) {
-                that.observe_file_resource(resource);
+                that._observe_file_resource(resource);
                 return files_resource_to_contents_model(new_path, resource);
             });
         };
@@ -325,14 +330,14 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          * If the resource has been modifeied on Drive in the
          * meantime, prompt user for overwrite.
          **/
-        Contents.prototype.save = function (path, model) {
+        GoogleDriveContents.prototype.save = function (path, model, options) {
             var that = this;
             var path_and_filename = utils.url_path_split(path);
             var path = path_and_filename[0];
             var filename = path_and_filename[1];
             return driveutils.get_resource_for_path(path, driveutils.FileType.FOLDER).then(function (folder_resource) {
                 return driveutils.get_resource_for_relative_path(filename, driveutils.FileType.FILE, false, folder_resource['id']).then(function (file_resource) {
-                    return that.save_existing(file_resource, model);
+                    return that._save_existing(file_resource, model);
                 }, function (error) {
                     // If the file does not exist (but the directory does) then a
                     // new file must be uploaded.
@@ -340,14 +345,14 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
                         return Promise.reject(error);
                     }
                     model['name'] = filename;
-                    return that.upload_new(folder_resource['id'], model);
+                    return that._upload_new(folder_resource['id'], model);
                 });
             }).then(function (file_resource) {
-                that.observe_file_resource(file_resource);
+                that._observe_file_resource(file_resource);
                 return files_resource_to_contents_model(path, file_resource);
             });
         };
-        Contents.prototype.copy = function (path, model) {
+        GoogleDriveContents.prototype.copy = function (path, model) {
             return Promise.reject(new Error('Copy not implemented yet.'));
         };
         /**
@@ -355,10 +360,10 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          */
         // NOTE: it would be better modify the API to combine create_checkpoint with
         // save
-        Contents.prototype.create_checkpoint = function (path, options) {
+        GoogleDriveContents.prototype.create_checkpoint = function (path, options) {
             var that = this;
             return gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FILE)).then(function (file_id) {
-                var revision_id = that.last_observed_revision[file_id];
+                var revision_id = that._last_observed_revision[file_id];
                 if (!revision_id) {
                     return Promise.reject(new Error('File must be saved before checkpointing'));
                 }
@@ -377,7 +382,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
                 };
             });
         };
-        Contents.prototype.restore_checkpoint = function (path, checkpoint_id, options) {
+        GoogleDriveContents.prototype.restore_checkpoint = function (path, checkpoint_id, options) {
             var file_id_prm = gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FILE));
             var contents_prm = file_id_prm.then(function (file_id) {
                 var request = gapi.client.drive.revisions.get({
@@ -394,7 +399,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
                 return driveutils.upload_to_drive(contents, undefined, file_id);
             });
         };
-        Contents.prototype.list_checkpoints = function (path, options) {
+        GoogleDriveContents.prototype.list_checkpoints = function (path, options) {
             return gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FILE)).then(function (file_id) {
                 var request = gapi.client.drive.revisions.list({ 'fileId': file_id });
                 return gapiutils.execute(request);
@@ -430,7 +435,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          *     success: success callback
          *     error: error callback
          */
-        Contents.prototype.list_contents = function (path, options) {
+        GoogleDriveContents.prototype.list_contents = function (path, options) {
             var that = this;
             return gapiutils.gapi_ready.then($.proxy(driveutils.get_id_for_path, this, path, driveutils.FileType.FOLDER)).then(function (folder_id) {
                 // Gets contents of the folder 1000 items at a time.  Google Drive
@@ -469,7 +474,8 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
                 return { content: list };
             });
         };
-        return Contents;
+        return GoogleDriveContents;
     })();
-    exports.Contents = Contents;
+    exports.GoogleDriveContents = GoogleDriveContents;
+    exports.Contents = GoogleDriveContents;
 });

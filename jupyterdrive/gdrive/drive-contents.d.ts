@@ -1,8 +1,32 @@
 import iface = require('content-interface');
-export declare class Contents implements iface.IContents {
-    base_url: string;
-    config: any;
-    last_observed_revision: any;
+import Path = iface.Path;
+import IContents = iface.IContents;
+import CheckpointId = iface.CheckpointId;
+/**
+ *
+ * Implement a contents manager that talks to Google Drive.  Expose itself also
+ * as `Contents` to be able to by transparently dynamically loaded and replace
+ * any other contents manager that expose the `IContents` interface.
+ *
+ * For a higher level description on how to use these interfaces, see the
+ * `IContents` interface docs
+ *
+ **/
+export declare class GoogleDriveContents implements IContents {
+    private _base_url;
+    private _config;
+    private _last_observed_revision;
+    /**
+     *
+     * A contentmanager handles passing file operations
+     * to the back-end.  This includes checkpointing
+     * with the normal file operations.
+     *
+     * Parameters:
+     *  options: dictionary
+     *      Dictionary of keyword arguments.
+     *          base_url: string
+     **/
     constructor(options: any);
     /**
      * Utility functions
@@ -17,39 +41,28 @@ export declare class Contents implements iface.IContents {
      *
      * @param {resource} resource_prm a Google Drive file resource.
      */
-    observe_file_resource(resource: any): void;
+    private _observe_file_resource(resource);
     /**
      * Saves a version of an existing file on drive
      * @param {Object} resource The Drive resource representing the file
      * @param {Object} model The IPython model object to be saved
      * @return {Promise} A promise fullfilled with the resource of the saved file.
      */
-    save_existing(resource: any, model: any): any;
+    private _save_existing(resource, model);
     /**
      * Uploads a model to drive
      * @param {string} folder_id The id of the folder to create the file in
      * @param {Object} model The IPython model object to be saved
      * @return {Promise} A promise fullfilled with the resource of the saved file.
      */
-    upload_new(folder_id: any, model: any): any;
+    private _upload_new(folder_id, model);
     /**
      * Notebook Functions
      */
-    /**
-     * Load a notebook.
-     *
-     * Calls success_callback with notebook JSON object (as string), or
-     * options.error with error.
-     *
-     * @method load_notebook
-     * @param {String} path
-     * @param {String} name
-     * @param {Object} options
-     */
-    get(path: any, options: any): Promise<{
+    get(path: Path, options: any): Promise<{
         type: string;
         name: any;
-        path: any;
+        path: iface.Path;
         created: any;
         last_modified: any;
         content: any;
@@ -58,28 +71,27 @@ export declare class Contents implements iface.IContents {
     /**
      * Creates a new untitled file or directory in the specified directory path.
      *
-     * @method new
      * @param {String} path: the directory in which to create the new file/directory
      * @param {Object} options:
      *      ext: file extension to use
      *      type: model type to create ('notebook', 'file', or 'directory')
      */
-    new_untitled(path: any, options: any): Promise<any>;
-    delete(path: any): any;
-    rename(path: any, new_path: any): any;
+    new_untitled(path: Path, options: any): Promise<any>;
+    delete(path: Path): any;
+    rename(path: Path, new_path: Path): any;
     /**
      * Given a path and a model, save the document.
      * If the resource has been modifeied on Drive in the
      * meantime, prompt user for overwrite.
      **/
-    save(path: string, model: any): any;
-    copy(path: any, model: any): Promise<any>;
+    save(path: Path, model: any, options?: any): any;
+    copy(path: Path, model: any): Promise<any>;
     /**
      * Checkpointing Functions
      */
-    create_checkpoint(path: any, options: any): any;
-    restore_checkpoint(path: any, checkpoint_id: any, options: any): Promise<any>;
-    list_checkpoints(path: any, options: any): any;
+    create_checkpoint(path: Path, options: any): any;
+    restore_checkpoint(path: Path, checkpoint_id: CheckpointId, options: any): Promise<any>;
+    list_checkpoints(path: Path, options: any): any;
     /**
      * File management functions
      */
@@ -100,5 +112,6 @@ export declare class Contents implements iface.IContents {
      *     success: success callback
      *     error: error callback
      */
-    list_contents(path: any, options: any): any;
+    list_contents(path: Path, options: any): Promise<any>;
 }
+export declare var Contents: typeof GoogleDriveContents;
