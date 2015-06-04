@@ -224,4 +224,3 @@ define(["require", "exports", 'jquery', 'base/js/dialog', 'base/js/utils'], func
         return authorize(null, config);
     });
 });
-//}
