@@ -56,7 +56,7 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
      * Split a path into path components
      */
     exports.split_path = function (path) {
-        return path.split('/');
+        return path.split('/').filter(function (s, i, a) { return (Boolean(s)); });
     };
     /**
      * Gets the Google Drive Files resource corresponding to a path.  The path
@@ -89,7 +89,7 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
             r2 = r2.then($.proxy(exports.get_resource_for_relative_path, this, component, t, child_resource));
         }
         ;
-        return result;
+        return r2;
     };
     /**
      * Gets the Google Drive file/folder ID for a file or folder.  The path is

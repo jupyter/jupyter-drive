@@ -74,21 +74,21 @@ export var get_resource_for_relative_path = function(path_component, type, opt_c
  * Split a path into path components
  */
 export var split_path = function(path:Path):Path[] {
-    return path.split('/');
+    return path.split('/').filter((s,i,a) => (Boolean(s)));
 };
 
 
-    /**
-     * Gets the Google Drive Files resource corresponding to a path.  The path
-     * is always treated as an absolute path, no matter whether it contains
-     * leading or trailing slashes.  In fact, all leading, trailing and
-     * consecutive slashes are ignored.
-     *
-     * @param {String} path The path
-     * @param {FileType} type The type (file or folder)
-     * @return {Promise} fullfilled with file/folder id (string) on success
-     *     or Error object on error.
-     */
+/**
+ * Gets the Google Drive Files resource corresponding to a path.  The path
+ * is always treated as an absolute path, no matter whether it contains
+ * leading or trailing slashes.  In fact, all leading, trailing and
+ * consecutive slashes are ignored.
+ *
+ * @param {String} path The path
+ * @param {FileType} type The type (file or folder)
+ * @return {Promise} fullfilled with file/folder id (string) on success
+ *     or Error object on error.
+ */
 export var get_resource_for_path = function(path, type?) {
         var components = split_path(path);
         if (components.length == 0) {
@@ -108,21 +108,21 @@ export var get_resource_for_path = function(path, type?) {
             r2 = r2.then($.proxy(get_resource_for_relative_path, this,
                                          component, t, child_resource));
         };
-        return result;
+        return r2;
     }
 
 
-    /**
-     * Gets the Google Drive file/folder ID for a file or folder.  The path is
-     * always treated as an absolute path, no matter whether it contains leading
-     * or trailing slashes.  In fact, all leading, trailing and consecutive
-     * slashes are ignored.
-     *
-     * @param {String} path The path
-     * @param {FileType} type The type (file or folder)
-     * @return {Promise} fullfilled with folder id (string) on success
-     *     or Error object on error.
-     */
+/**
+ * Gets the Google Drive file/folder ID for a file or folder.  The path is
+ * always treated as an absolute path, no matter whether it contains leading
+ * or trailing slashes.  In fact, all leading, trailing and consecutive
+ * slashes are ignored.
+ *
+ * @param {String} path The path
+ * @param {FileType} type The type (file or folder)
+ * @return {Promise} fullfilled with folder id (string) on success
+ *     or Error object on error.
+ */
 export var get_id_for_path = function(path, type?) {
         var components = split_path(path);
         if (components.length == 0) {
