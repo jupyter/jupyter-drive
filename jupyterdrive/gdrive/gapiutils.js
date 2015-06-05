@@ -1,12 +1,11 @@
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
 define(["require", "exports", 'jquery', 'base/js/dialog', 'base/js/utils'], function (require, exports, $, dialog, utils) {
-    // export module gapiutils {
     var default_config = {
         /**
          * Google API Client ID
          * @type {string}
-         */
+         **/
         CLIENT_ID: '763546234320-uvcktfp0udklafjqv00qjgivpjh0t33p.apps.googleusercontent.com',
         APP_ID: '763546234320',
         FILE_SCOPE: true,
@@ -204,7 +203,7 @@ define(["require", "exports", 'jquery', 'base/js/dialog', 'base/js/utils'], func
             });
         }
     };
-    var _handle = { resolve: undefined };
+    var _handle = { resolve: function (any) { return Object; } };
     var _conf_prm = new Promise(function (resolve) {
         _handle.resolve = resolve;
     });

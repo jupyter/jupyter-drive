@@ -12,7 +12,7 @@ export declare var APP_ID: string;
  * @return {Promise} resolved with the contents of the file, or rejected
  *     with an Error.
  */
-export declare var download: (url: any) => Promise<any>;
+export declare var download: (url: string) => Promise<any>;
 /**
  * Executes a Google API request.  This wraps the request.execute() method,
  * by returning a Promise, which may be resolved or rejected.  The raw

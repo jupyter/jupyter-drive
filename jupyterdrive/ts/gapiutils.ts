@@ -18,15 +18,12 @@ interface LocalWindow extends Window {
 
 declare var window: LocalWindow;
 
-// export module gapiutils {
-
-
 
 var default_config = {
 /**
  * Google API Client ID
  * @type {string}
- */
+ **/
     CLIENT_ID : '763546234320-uvcktfp0udklafjqv00qjgivpjh0t33p.apps.googleusercontent.com',
     APP_ID : '763546234320',
     FILE_SCOPE : true,
@@ -74,7 +71,7 @@ var ORIGIN_MISMATCH_MSG = (
  * @return {Promise} resolved with the contents of the file, or rejected
  *     with an Error.
  */
-export var download = function(url) {
+export var download = function(url:string):Promise<any> {
     // Sends request to load file to drive.
     var token = gapi.auth.getToken().access_token;
     var settings = { headers: { 'Authorization': 'Bearer ' + token } };
@@ -88,7 +85,7 @@ export var download = function(url) {
  *     by a request.execute method.
  * @return {Promise} The result wrapped as a promise.
  */
-var wrap_result = function(result) {
+var wrap_result = function<T>(result:T):Promise<T> {
     if (!result) {
         // Error type 1: result is False
         var error = new Error('Unknown error during Google API call');
@@ -143,7 +140,7 @@ export var execute = function(request) {
  * @param {Number} interval Polling interval in milliseconds
  * @return Promise fullfilled when condition holds
  */
-var poll = function(condition, interval) {
+var poll = function(condition, interval:number):Promise<any> {
     return new Promise(function(resolve, reject) {
         var polling_function = function() {
             if (condition()) {
@@ -161,7 +158,7 @@ var poll = function(condition, interval) {
  * library loads.
  * @return {Promise} empty value on success or error on failure.
  */
-var load_gapi_1 = function() {
+var load_gapi_1 = function():Promise<any> {
     return Promise.resolve($.getScript('https://apis.google.com/js/client.js'))
     .then(function() {
         // poll every 100ms until window.gapi and gapi.client exist.
@@ -173,7 +170,7 @@ var load_gapi_1 = function() {
  * (Internal use only) Returns a promise fullfilled when client library
  * loads.
  */
-var load_gapi_2 = function(d) {
+var load_gapi_2 = function(d):Promise<any> {
     return new Promise(function(resolve, reject) {
         gapi.load('auth:client,drive-realtime,drive-share,picker', function() {
             gapi.client.load('drive', 'v2', resolve);
@@ -186,7 +183,7 @@ var load_gapi_2 = function(d) {
  * @param {boolean} opt_withPopup If true, display popup without first
  *     trying to authorize without a popup.
  */
-var authorize = function(opt_withPopup, conf) {
+var authorize = function(opt_withPopup:boolean, conf:any):Promise<any> {
     var config = $.extend({}, default_config, (conf.data||{})['gdrive']);
     var scope = [];
     if(config.FILE_SCOPE){
@@ -241,17 +238,19 @@ var authorize = function(opt_withPopup, conf) {
     }
 };
 
-var _handle = {resolve:undefined};
+var _handle = {resolve:(any) => Object};
 var _conf_prm = new Promise(function(resolve){
     _handle.resolve = resolve;
 })
+
+
 
 /**
  * calling config with conf, results in the promise _conf_prm being resolved with conf.
  * This then triggers the rest of the gapi loading
  **/
-export var config = function(conf){
-  _handle.resolve(conf);
+export var config = function(conf):void{
+  return _handle.resolve(conf);
 }
 
 /**
