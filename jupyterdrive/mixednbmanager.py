@@ -6,12 +6,17 @@ from .compat import JUPYTER
 
 if JUPYTER:
     from notebook.services.contents.manager import ContentsManager
+    from notebook.services.contents.filemanager import FileContentsManager
     from traitlets.traitlets import List
     from traitlets import import_item
 else:
     from IPython.html.services.contents.manager import ContentsManager
+    from IPython.html.services.contents.filemanager import FileContentsManager
     from IPython.utils.traitlets import List
     from IPython.utils.importstring import import_item
+
+#make pyflakes happy
+FileContentsManager
 
 def _split_path(path):
     """split a path return by the api

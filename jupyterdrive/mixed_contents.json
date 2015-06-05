@@ -8,7 +8,7 @@
     "filesystem_scheme": [
         {
             "root":"local",
-            "contents":"IPython.html.services.contents.filemanager.FileContentsManager"
+            "contents":"jupyterdrive.mixednbmanager.FileContentsManager"
         },
         {
             "root": "gdrive",
