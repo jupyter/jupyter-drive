@@ -3,6 +3,7 @@ var gulp = require('gulp');
 var watch = require('gulp-watch');
 var concat = require('gulp-concat');
 var merge = require('merge2');
+var insert = require('gulp-insert');
 
 var tsProject = ts.createProject({
     declarationFiles: true,
@@ -33,7 +34,9 @@ gulp.task('js', function() {
                        .pipe(ts(tsProject));
     return merge([
         tsResult.dts.pipe(gulp.dest('jupyterdrive/gdrive')),
-        tsResult.js.pipe(gulp.dest('jupyterdrive/gdrive'))
+        tsResult.js
+            .pipe(insert.prepend('// AUTOMATICALY GENERATED FILE, see cooresponding .ts file\n'))
+            .pipe(gulp.dest('jupyterdrive/gdrive'))
     ]);
 });
 
