@@ -250,7 +250,7 @@ var _conf_prm = new Promise(function(resolve){
  * This then triggers the rest of the gapi loading
  **/
 export var config = function(conf):void{
-  return _handle.resolve(conf);
+  _handle.resolve(conf);
 }
 
 /**

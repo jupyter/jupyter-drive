@@ -200,7 +200,7 @@ export var get_new_filename = function(opt_folderId, ext, base_name) {
  *     resource for the uploaded file, or rejected with an Error object.
  */
 export var upload_to_drive = function(data, metadata, opt_fileId?, opt_params?: any) {
-    var params = opt_params || {};
+    var params:Object = opt_params || {};
     var delimiter = '\r\n--' + MULTIPART_BOUNDARY + '\r\n';
     var close_delim = '\r\n--' + MULTIPART_BOUNDARY + '--';
     var body = delimiter +
@@ -298,19 +298,19 @@ export var get_contents = function(resource, already_picked:boolean, opt_num_tri
  *
  **/
 export var set_user_info = function(selector:string):Promise<any>{
-        selector = selector || '#header-container';
-        var request = gapi.client.drive.about.get()
-        return gapiutils.execute(request).then(function(result){
-            var user = result.user;
-            var image = $('<img/>').attr('src', result.user.picture.url)
-                                   .addClass('pull-right')
-                                   .css('border-radius','32px')
-                                   .css('width','32px')
-                                   .css('margin-top','-1px')
-                                   .css('margin-bottom','-1px');
-            image.attr('title', 'Logged in to Google Drive as '+user.displayName);
-            $('#header-container').prepend($('<span/>').append(image));
-        })
-    }
+    selector = selector || '#header-container';
+    var request = gapi.client.drive.about.get()
+    return gapiutils.execute(request).then(function(result){
+        var user = result.user;
+        var image = $('<img/>').attr('src', result.user.picture.url)
+                               .addClass('pull-right')
+                               .css('border-radius','32px')
+                               .css('width','32px')
+                               .css('margin-top','-1px')
+                               .css('margin-bottom','-1px');
+        image.attr('title', 'Logged in to Google Drive as '+user.displayName);
+        $('#header-container').prepend($('<span/>').append(image));
+    })
+}
 
 
