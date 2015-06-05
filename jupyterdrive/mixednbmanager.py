@@ -15,6 +15,9 @@ else:
     from IPython.utils.traitlets import List
     from IPython.utils.importstring import import_item
 
+#make pyflakes happy
+FileContentsManager
+
 def _split_path(path):
     """split a path return by the api
 
