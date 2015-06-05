@@ -1,3 +1,4 @@
+// AUTOMATICALY GENERATED FILE, see cooresponding .ts file
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
 //
@@ -244,3 +245,5 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
     exports.MixedContents = MixedContents;
     exports.Contents = MixedContents;
 });
+
+//# sourceMappingURL=mixed-contents.js.map

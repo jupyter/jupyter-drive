@@ -1,3 +1,4 @@
+// AUTOMATICALY GENERATED FILE, see cooresponding .ts file
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
 //
@@ -479,3 +480,5 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
     exports.GoogleDriveContents = GoogleDriveContents;
     exports.Contents = GoogleDriveContents;
 });
+
+//# sourceMappingURL=drive-contents.js.map

@@ -1,3 +1,4 @@
+// AUTOMATICALY GENERATED FILE, see cooresponding .ts file
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
 define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], function (require, exports, $, gapiutils, pickerutils) {
@@ -267,3 +268,5 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
         });
     };
 });
+
+//# sourceMappingURL=driveutils.js.map

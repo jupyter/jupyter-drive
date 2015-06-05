@@ -1,3 +1,4 @@
+// AUTOMATICALY GENERATED FILE, see cooresponding .ts file
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
 //
@@ -96,3 +97,5 @@ define(["require", "exports"], function (require, exports) {
         };
     };
 });
+
+//# sourceMappingURL=notebook_model.js.map
