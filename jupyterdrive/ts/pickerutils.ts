@@ -1,8 +1,11 @@
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
 
-define(function(require) {
-    var gapi_utils = require('./gapi_utils');
+import gapiutils = require('./gapiutils');
+declare var Promise;
+declare var google:any;
+declare var gapi:any;
+
 
     /**
      * Gets the user to pick a file in the file picker.  This indicates to
@@ -14,7 +17,7 @@ define(function(require) {
      * @param {Promise} a Promise resolved when user selects file, or rejected if
      *     they cancel.
      */
-    var pick_file = function(parent_id, filename) {
+    export function pick_file(parent_id, filename):any {
         return new Promise(function(resolve, reject) {
             var callback = function(response) {
                 if (response['action'] == google.picker.Action.CANCEL) {
@@ -25,7 +28,7 @@ define(function(require) {
                 } else if (response['action'] == google.picker.Action.PICKED) {
                     resolve();
                 }
-            };
+            };http://elacave.lmdb.eu/~carreau/ml/Matlab-R2011a-unix-mac.iso
             var builder = new google.picker.PickerBuilder();
 
             var search_view = new google.picker.DocsView(google.picker.ViewId.DOCS)
@@ -36,17 +39,10 @@ define(function(require) {
             var picker = builder
                 .addView(search_view)
                 .setOAuthToken(gapi.auth.getToken()['access_token'])
-                .setAppId(gapi_utils.APP_ID)
+                .setAppId(gapiutils.APP_ID)
                 .setCallback(callback)
                 .build();
 
             picker.setVisible(true);
         });
     };
-
-    var picker_utils = {
-        pick_file: pick_file
-    };
-
-    return picker_utils;
-});
