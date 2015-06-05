@@ -18,7 +18,7 @@ export interface FileList {
 export interface FileSystem extends Object {
     then?: any;
 }
-export declare class Contents implements IContents {
+export declare class MixedContents implements IContents {
     private _config;
     private _filesystem;
     constructor(options: any);
@@ -99,3 +99,4 @@ export declare class Contents implements IContents {
     restore_checkpoint(path: Path, checkpoint_id: CheckpointId, options: any): any;
     list_checkpoints(path: Path, options: any): any;
 }
+export declare var Contents: typeof MixedContents;

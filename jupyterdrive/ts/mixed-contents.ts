@@ -46,7 +46,7 @@ export interface FileSystem extends Object {
     then?
 }
 
-export class Contents implements IContents {
+export class MixedContents implements IContents {
 
     private _config:any;
     private _filesystem:FileSystem;
@@ -318,3 +318,5 @@ export class Contents implements IContents {
     }
 
 }
+
+export var Contents = MixedContents
