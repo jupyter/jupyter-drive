@@ -5,6 +5,7 @@
 clean:
 	rm -rf build 
 	rm -rf dist
+	rm -rf docs
 
 dist:
 	python setup.py sdist
@@ -13,4 +14,9 @@ dist:
 
 upload: dist
 	twine upload dist/*
+
+
+docs: jupyterdrive/ts/*.ts
+	typedoc --out docs --mode file --externalPattern 'typings/*' jupyterdrive/ts/* typings/* --module amd
+
 

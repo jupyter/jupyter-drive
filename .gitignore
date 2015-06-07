@@ -9,3 +9,4 @@ dist/
 .coverage
 .*.swp
 node_modules
+*.map

@@ -10,15 +10,14 @@ import IPython = require('base/js/namespace')
 
 import utils = require("base/js/utils");
 import Promises = require('es6-promise');
+import iface = require('content-interface');
+
+import IContents = iface.IContents;
+import Path = iface.Path;
+import CheckpointId = iface.CheckpointId
 
 /** Enum for object types */
-var ArgType = {
-    PATH : 1,
-    FILE : 2,
-    LIST : 3,
-    OTHER : 4
-}
-
+export enum ArgType  {PATH = 1, FILE, LIST, OTHER};
 
 var _default = {"schema":
   [
@@ -36,17 +35,21 @@ var _default = {"schema":
 };
 
 export interface File {
-    path:string
+    path:Path
 }
 
 export interface FileList {
     contents:any
 }
 
-export class Contents {
+export interface FileSystem extends Object {
+    then?
+}
 
-    config:any;
-    filesystem:any;
+export class MixedContents implements IContents {
+
+    private _config:any;
+    private _filesystem:FileSystem;
 
 
     constructor(options) {
@@ -62,26 +65,27 @@ export class Contents {
         //          base_url: string
 
         // Generate a map from root directories, to Contents instances.
-        this.config = options.common_config;
+        this._config = options.common_config;
 
-        this.filesystem = this.config.loaded.then($.proxy(function() {
-          var local_config = this.config.data['mixed_contents'];
+        this._filesystem = this._config.loaded.then($.proxy(function() {
+          var local_config = this._config.data['mixed_contents'];
           if (!local_config){
-            this.config.update({'mixed_contents': _default});
+            this._config.update({'mixed_contents': _default});
           }
           var schema = (local_config||_default)['schema'];
           return Promise.all(
                 schema.map(function(fs) {
                 return new Promise(function(resolve, reject) {
+
                     require([fs['contents']], function(contents) {
-                    resolve({
-                      'root': fs['root'],
-                      'contents': new contents.Contents(options)
-                  });
-                });
-              });
+                        resolve({
+                          'root': fs['root'],
+                         'contents': new contents.Contents(options)
+                        });
+                    });
+                 });
             })).then(function(filesystem_array) {
-              var filesystem = {};
+              var filesystem:FileSystem = {};
               filesystem_array.forEach(function(fs) {
                 filesystem[fs['root']] = fs['contents'];
               });
@@ -95,7 +99,7 @@ export class Contents {
      * @param {Object} filesystem
      * @return {Object} An object representing a virtual directory.
      */
-     virtual_fs_roots(filesystem) {
+     private _virtual_fs_roots(filesystem:FileSystem) {
         return Object.keys(filesystem).map(function(root) {
             return {
                 type: 'directory',
@@ -115,7 +119,7 @@ export class Contents {
      * @param {String} path The path to check.
      * @return {String} The root path for the contents instance.
      */
-    get_fs_root(filesystem:string, path:string):string {
+    get_fs_root(filesystem:FileSystem, path:Path):Path {
         var components = path.split('/');
         if (components.length === 0) {
             return '';
@@ -134,7 +138,7 @@ export class Contents {
      * @return {String} the converted path
      *
      */
-    from_virtual_path(root:string, path:string, config):string {
+    from_virtual_path(root:Path, path:Path, config:any):Path {
         var match_conf = config.filter(function(x){return x.root == root;});
         if( match_conf[0].stripjs !== true){
           return path;
@@ -150,8 +154,8 @@ export class Contents {
      * @return {String} the converted path
      *
      */
-    to_virtual_path(root:string, path:string):string {
-        return utils.url_path_join(root, path);
+    private _to_virtual_path(root:Path, path:Path):Path {
+        return <Path>utils.url_path_join(<string>root, <string>path);
     }
 
     /**
@@ -161,8 +165,8 @@ export class Contents {
      * @param {File} file The file model (this is modified by the function).
      * @return {File} the converted file model
      */
-    to_virtual_file(root:string, file:File):File {
-        file['path'] = this.to_virtual_path(root, file['path']);
+    private _to_virtual_file(root:Path, file:File):File {
+        file['path'] = this._to_virtual_path(root, file['path']);;
         return file;
     }
 
@@ -173,25 +177,25 @@ export class Contents {
      * @param {Object} list The file list (this is modified by the function).
      * @return {Object} The converted file list
      */
-    to_virtual_list(root:string, list:FileList):FileList {
-        list['content'].forEach($.proxy(this.to_virtual_file, this, root));
+    private _to_virtual_list(root:Path, list:FileList):FileList {
+        list['content'].forEach($.proxy(this._to_virtual_file, this, root));
         return list;
     }
 
 
-    to_virtual(root:string, type, object) {
+    private _to_virtual(root:Path, type:ArgType, object) {
         if (type === ArgType.PATH) {
-            return this.to_virtual_path(root, object);
+            return this._to_virtual_path(root, object);
         } else if (type === ArgType.FILE) {
-            return this.to_virtual_file(root, object);
+            return this._to_virtual_file(root, object);
         } else if (type === ArgType.LIST) {
-            return this.to_virtual_list(root, object);
+            return this._to_virtual_list(root, object);
         } else {
             return object;
         }
     }
 
-    from_virtual(root:string, type, object, config) {
+    from_virtual(root:Path, type:ArgType, object, config) {
         if (type === ArgType.PATH) {
             return this.from_virtual_path(root, object, config);
         } else if (type === ArgType.FILE) {
@@ -210,8 +214,8 @@ export class Contents {
      * @param {Array} return_types Type of the return value of the function
      * @param {Array} args the arguments to apply
      */
-    route_function(method_name, arg_types, return_type, args) {
-        return this.filesystem.then((filesystem) => {
+    private _route_function(method_name:string, arg_types:ArgType[], return_type, args) {
+        return this._filesystem.then((filesystem) => {
             if (arg_types.length == 0 || arg_types[0] != ArgType.PATH) {
                 // This should never happen since arg_types is hard coded below.
                 throw 'unexpected value of arg_types';
@@ -220,18 +224,18 @@ export class Contents {
 
             if (root === '') {
                 if (method_name === 'list_contents') {
-                  return {'content': this.virtual_fs_roots(filesystem)};
+                  return {'content': this._virtual_fs_roots(filesystem)};
                 } else {
                   throw 'true root directory only contains mount points.';
                 }
             }
 
             for (var i = 0; i < args.length; i++) {
-                args[i] = this.from_virtual(root, arg_types[i], args[i], this.config.data['mixed_contents']['schema']);
+                args[i] = this.from_virtual(root, arg_types[i], args[i], this._config.data['mixed_contents']['schema']);
             }
-            var contents = filesystem[root];
+            var contents = filesystem[<string>root];
             return contents[method_name].apply(contents, args).then(
-                $.proxy(this.to_virtual, this, root, return_type));
+                $.proxy(this._to_virtual, this, root, return_type));
         });
     }
 
@@ -239,50 +243,50 @@ export class Contents {
      * File management functions
      */
 
-    get(path, type, options) {
-        return this.route_function(
+    get(path:Path, type:ArgType, options:any) {
+        return this._route_function(
             'get',
             [ArgType.PATH, ArgType.OTHER, ArgType.OTHER],
             ArgType.FILE, arguments);
     }
 
-    new_untitled(path:string, options) {
-        return this.route_function(
+    new_untitled(path:Path, options) {
+        return this._route_function(
             'new_untitled',
             [ArgType.PATH, ArgType.OTHER],
             ArgType.FILE, arguments);
     }
 
-    delete(path) {
-        return this.route_function(
+    delete(path:Path) {
+        return this._route_function(
             'delete',
             [ArgType.PATH],
             ArgType.OTHER, arguments);
     }
 
-    rename(path, new_path) {
-        return this.route_function(
+    rename(path:Path, new_path:Path) {
+        return this._route_function(
             'rename',
             [ArgType.PATH, ArgType.PATH],
             ArgType.FILE, arguments);
     }
 
-    save(path, model, options) {
-        return this.route_function(
+    save(path: Path, model, options) {
+        return this._route_function(
             'save',
             [ArgType.PATH, ArgType.OTHER, ArgType.OTHER],
             ArgType.FILE, arguments);
     }
 
-    list_contents(path, options) {
-        return this.route_function(
+    list_contents(path:Path, options) {
+        return this._route_function(
             'list_contents',
             [ArgType.PATH, ArgType.OTHER],
             ArgType.LIST, arguments);
     }
 
-    copy(from_file, to_dir) {
-        return this.route_function(
+    copy(from_file:Path, to_dir:Path) {
+        return this._route_function(
             'copy',
             [ArgType.PATH, ArgType.PATH],
             ArgType.FILE, arguments);
@@ -292,26 +296,27 @@ export class Contents {
      * Checkpointing Functions
      */
 
-    create_checkpoint(path, options) {
-        return this.route_function(
+    create_checkpoint(path:Path, options) {
+        return this._route_function(
             'create_checkpoint',
             [ArgType.PATH, ArgType.OTHER],
             ArgType.OTHER, arguments);
     }
 
-    restore_checkpoint(path, checkpoint_id, options) {
-        return this.route_function(
+    restore_checkpoint(path:Path, checkpoint_id:CheckpointId, options:any) {
+        return this._route_function(
             'restore_checkpoint',
             [ArgType.PATH, ArgType.OTHER, ArgType.OTHER],
             ArgType.OTHER, arguments);
     }
 
-    list_checkpoints(path, options) {
-        return this.route_function(
+    list_checkpoints(path:Path, options) {
+        return this._route_function(
             'list_checkpoints',
             [ArgType.PATH, ArgType.OTHER],
             ArgType.OTHER, arguments);
     }
 
-
 }
+
+export var Contents = MixedContents
