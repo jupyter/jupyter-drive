@@ -11,6 +11,7 @@ define(function(require) {
     var picker_utils = require('./picker_utils');
 
     var FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
+    var REALTIME_MIMETYPE = 'application/vnd.google-apps.drive-sdk'
 
     var NOTEBOOK_MIMETYPE = 'application/ipynb';
 
@@ -261,7 +262,32 @@ define(function(require) {
      */
     var get_contents = function(resource, already_picked, opt_num_tries) {
         if (resource['downloadUrl']) {
-            return gapi_utils.download(resource['downloadUrl']);
+            var _h = {}
+
+            var rtm = new Promise(function(resolve){
+                _h.resolve = resolve;
+            })
+            gapi.drive.realtime.load(resource['id'], function(doc){
+                var model = doc.getModel();
+                var root = model.getRoot();
+                var strmo = root.get('text')
+                if (strmo === null) {
+                    console.log('string model is null, setting the model')
+                    strmo = model.createString();
+                    root.set('text', strmo);
+                }
+                _h.resolve({
+                    text: strmo.toString(),
+                    string: strmo
+                })
+                window.doc = doc; 
+                window.mode = model;
+                window.root = root; 
+            })
+            return rtm;
+            return  gapi_utils.download(resource['downloadUrl']).then(function(res){
+                return res
+            });
         } else if (already_picked) {
             if (opt_num_tries == 0) {
               return Promise.reject(new Error('Max retries of file load reached'));
@@ -308,7 +334,8 @@ define(function(require) {
                                    .css('border-radius','32px')
                                    .css('width','32px')
                                    .css('margin-top','-1px')
-                                   .css('margin-bottom','-1px');
+                                   .css('margin-bottom','-1px')
+                                   .css('margin-left','10px');
             image.attr('title', 'Logged in to Google Drive as '+user.displayName);
             $('#header-container').prepend($('<span/>').append(image));
         })

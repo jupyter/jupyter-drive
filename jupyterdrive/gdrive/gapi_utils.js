@@ -1,4 +1,4 @@
-// Copyright (c) IPython Development Team.
+
 // Distributed under the terms of the Modified BSD License.
 define(["require", "exports", 'jquery', 'base/js/dialog', 'base/js/utils'], function (require, exports, $, dialog, utils) {
     var default_config = {
