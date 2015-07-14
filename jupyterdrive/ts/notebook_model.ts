@@ -6,7 +6,7 @@
 
 export interface Cell {
     source:any;
-    metadata:any;
+    metadata:Object;
 }
 
 export interface Notebook {
@@ -33,7 +33,7 @@ export interface Notebook {
  */
 var transform_notebook = function(notebook:Notebook, transform_fn:(string)=> string):Notebook{
     if (!notebook['cells']) {
-        return;
+        return null;
     }
     notebook['cells'].forEach(function(cell) {
       if (cell['source']) {
@@ -55,7 +55,7 @@ var transform_notebook = function(notebook:Notebook, transform_fn:(string)=> str
  * @return {Object} a JSON representation of the notebook.
      */
 export var notebook_from_file_contents = function(contents:string):Notebook {
-    var notebook = <Notebook>JSON.parse(contents);
+    var notebook:Notebook = <Notebook>JSON.parse(contents);
     var unsplit_lines = function(multiline_string) {
         if (Array.isArray(multiline_string)) {
             return multiline_string.join('');
@@ -63,7 +63,8 @@ export var notebook_from_file_contents = function(contents:string):Notebook {
             return multiline_string;
         }
     };
-    transform_notebook(notebook, unsplit_lines);
+    transform_notebook(<Notebook>notebook, unsplit_lines);
+    notebook.metadata = notebook.metadata || {};
     return notebook;
 }
 
@@ -73,7 +74,7 @@ export var notebook_from_file_contents = function(contents:string):Notebook {
  * @return {string} The JSON representation with lines split.
  */
 export var file_contents_from_notebook = function(notebook:Notebook):string {
-    var notebook_copy = <Notebook>JSON.parse(JSON.stringify(notebook));
+    var notebook_copy:Notebook = <Notebook>JSON.parse(JSON.stringify(notebook));
     var split_lines = function(obj) {
         if(typeof(obj)!=='string'){
             return obj;
@@ -87,7 +88,7 @@ export var file_contents_from_notebook = function(notebook:Notebook):string {
         });
     };
 
-    transform_notebook(notebook, split_lines);
+    transform_notebook(<Notebook>notebook, split_lines);
     return JSON.stringify(notebook_copy);
 }
 

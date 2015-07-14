@@ -1,6 +1,6 @@
 export interface Cell {
     source: any;
-    metadata: any;
+    metadata: Object;
 }
 export interface Notebook {
     cells: Cell[];
