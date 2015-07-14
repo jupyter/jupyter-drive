@@ -131,10 +131,9 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
                 gapiutils.gapi_ready.then(driveutils.set_user_info);
             });
         }
-        //
-        // Utility functions
-        //
-        
+        /**
+         * Utility functions
+         */
         /**
          * This function should be called when a file is modified or opened.  It
          * caches the revisionId of the head revision of that file.  This
@@ -144,7 +143,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          * checkpoint after saving.
          *
          * @param {resource} resource_prm a Google Drive file resource.
-         **/
+         */
         GoogleDriveContents.prototype._observe_file_resource = function (resource) {
             this._last_observed_revision[resource['id']] = resource['headRevisionId'];
         };

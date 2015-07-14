@@ -4,7 +4,7 @@ export interface Cell {
 }
 export interface Notebook {
     cells: Cell[];
-    metadata: any;
+    metadata: Object;
     nbformat: number;
     nbformat_minor: number;
 }

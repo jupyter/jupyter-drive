@@ -13,7 +13,7 @@ log.setLevel(20)
 
 
 if JUPYTER:
-    import  notebook.nbextensions as nbe
+    import notebook.nbextensions as nbe
     from IPython.paths import locate_profile
     from IPython.utils.py3compat import cast_unicode_py2
     from jupyter_core.paths import jupyter_config_dir
@@ -25,9 +25,8 @@ else :
     from IPython.config import Config, JSONFileConfigLoader, ConfigFileNotFound
 
 
-
-def install(profile='default', symlink=True, mixed=False, user=False, prefix=None,
-            verbose=False, path=None):
+def install(profile='default', symlink=True, mixed=False, user=False,
+            prefix=None, verbose=False, path=None):
 
     dname = os.path.dirname(__file__)
 
@@ -112,17 +111,17 @@ def _activate(profile, mixed):
 def deactivate(profile='default'):
     """should be a matter of just unsetting the above keys
     """
-    with jconfig(profile) as config: 
+    with jconfig(profile) as config:
         deact = True;
         if not getattr(config.NotebookApp.contents_manager_class, 'startswith',lambda x:False)('jupyterdrive'):
             deact=False
         if 'gdrive' not in getattr(config.NotebookApp.tornado_settings,'get', lambda _,__:'')('contents_js_source',''):
             deact=False
         if deact:
-            del config['NotebookApp']['tornado_settings']['contents_js_source']    
+            del config['NotebookApp']['tornado_settings']['contents_js_source']
             del config['NotebookApp']['contents_manager_class']
         # try to remove MixedContent Conf
-        
+
 
 
 
