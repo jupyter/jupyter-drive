@@ -4,6 +4,8 @@
 //
 //
 
+declare var console:Console;
+
 export interface Cell {
     source:any;
     metadata:Object;
@@ -56,6 +58,15 @@ var transform_notebook = function(notebook:Notebook, transform_fn:(string)=> str
      */
 export var notebook_from_file_contents = function(contents:string):Notebook {
     var notebook:Notebook = <Notebook>JSON.parse(contents);
+    // bug in some case notebook as serialized twice.
+    // make sure to re-deserialized:
+    if(typeof(notebook) === "string"){
+      console.warn("[notebook_model.ts] (╯°□°）╯︵ ┻━┻ :: Apparently Notebook has been serialized twice, deserializing a second time !");
+      debugger;
+      notebook = <Notebook>JSON.parse(<any>notebook)
+      console.warn("[notebook_model.ts] Double desirializing went ok")
+
+    }
     var unsplit_lines = function(multiline_string) {
         if (Array.isArray(multiline_string)) {
             return multiline_string.join('');
@@ -68,12 +79,20 @@ export var notebook_from_file_contents = function(contents:string):Notebook {
     return notebook;
 }
 
+
+
 /**
  * Creates the contents of a file from a JSON notebook representation.
  * @param {Object} notebook a JSON representation of the notebook.
- * @return {string} The JSON representation with lines split.
+ * @return {Object} The JSON representation with lines split.
  */
-export var file_contents_from_notebook = function(notebook:Notebook):string {
+export var notebook_json_contents_from_notebook = function(notebook:Notebook) {
+
+    if(typeof(notebook) == 'string'){
+      var e  = new Error("[notebook_model.ts] `file_contents_from_notebook`'s notebook is a string");
+      console.error(e);
+      throw e
+    }
     var notebook_copy:Notebook = <Notebook>JSON.parse(JSON.stringify(notebook));
     var split_lines = function(obj) {
         if(typeof(obj)!=='string'){
@@ -89,7 +108,16 @@ export var file_contents_from_notebook = function(notebook:Notebook):string {
     };
 
     transform_notebook(<Notebook>notebook, split_lines);
-    return JSON.stringify(notebook_copy);
+    return notebook;
+}
+
+/**
+ * Creates the contents of a file from a JSON notebook representation.
+ * @param {Object} notebook a JSON representation of the notebook.
+ * @return {String} The JSON representation with lines split.
+ */
+export var file_contents_from_notebook = function(notebook:Notebook):string {
+    return JSON.stringify(notebook_json_contents_from_notebook(notebook));
 }
 
 /**

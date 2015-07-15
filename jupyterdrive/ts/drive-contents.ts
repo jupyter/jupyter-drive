@@ -27,7 +27,7 @@ var contents_model_to_metadata_and_bytes = function(model):[any, string] {
     var format = model.format;
     if (model['type'] === 'notebook') {
         // This seem to be wrong content is Notebook here. string below
-        content = notebook_model.file_contents_from_notebook(content);
+        content = notebook_model.notebook_json_contents_from_notebook(content);
         format = 'json';
         mimetype = driveutils.NOTEBOOK_MIMETYPE;
     } else if (model['type'] === 'file') {
@@ -42,7 +42,11 @@ var contents_model_to_metadata_and_bytes = function(model):[any, string] {
     // Set mime type according to format if it's not set
     if (format == 'json') {
         // This seem to be wrong content is String Here, Notebook above
-        content = JSON.stringify(content);
+        if(typeof(content) === 'string'){
+          console.warn(new Error('(\\)(°,,°)(\\) blblblblbl you are stringifying a string, bailing out'))
+        } else {
+          content = JSON.stringify(content);
+        }
         mimetype = mimetype || 'application/json';
     } else if (format == 'base64') {
         mimetype = mimetype || 'application/octet-stream';
@@ -119,7 +123,7 @@ var files_resource_to_contents_model = function(path:Path, resource, content?) {
  * `IContents` interface docs
  *
  **/
-export class GoogleDriveContents implements IContents { 
+export class GoogleDriveContents implements IContents {
 
     private _base_url:string;
     private _config:any;
@@ -180,6 +184,11 @@ export class GoogleDriveContents implements IContents {
      */
     private _save_existing(resource, model) {
         var that = this;
+        if(typeof(model) == 'string'){
+          var e  = new Error("[drive-contents.ts] `_save_existing`'s model is a string");
+          console.error(e);
+          throw e
+        }
         var converted = contents_model_to_metadata_and_bytes(model);
         var contents = converted[1];
         var save = function() {
@@ -219,6 +228,11 @@ export class GoogleDriveContents implements IContents {
     private _upload_new(folder_id, model) {
         var that = this;
 
+        if(typeof(model) == 'string'){
+          var e  = new Error("[drive-contents.ts] `_save_existing`'s model is a string");
+          console.error(e);
+          throw e
+        }
         var converted = contents_model_to_metadata_and_bytes(model);
         var metadata = converted[0];
         var contents = converted[1];
