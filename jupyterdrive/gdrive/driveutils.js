@@ -84,13 +84,16 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
             var component = components[i];
             var t = (i == components.length - 1) ? type : 2 /* FOLDER */;
             var child_resource = i < components.length - 1;
-            var r2 = result.then(function (resource) {
-                return resource['id'];
-            });
-            r2 = r2.then($.proxy(exports.get_resource_for_relative_path, this, component, t, child_resource));
+            // IIFE or, component`, `t`, `child_resources` get shared in
+            // between Promises
+            result = (function (component, t, child_resource, result) {
+                return result.then(function (data) {
+                    return exports.get_resource_for_relative_path(component, t, child_resource, data['id']);
+                });
+            })(component, t, child_resource, result);
         }
         ;
-        return r2;
+        return result;
     };
     /**
      * Gets the Google Drive file/folder ID for a file or folder.  The path is

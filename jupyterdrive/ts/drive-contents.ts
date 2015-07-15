@@ -41,7 +41,9 @@ var contents_model_to_metadata_and_bytes = function(model):[any, string] {
 
     // Set mime type according to format if it's not set
     if (format == 'json') {
-        // This seem to be wrong content is String Here, Notebook above
+        // This seem to have been wrong content, as type was String Here,
+        // instead of a Notebook Json model. This lead to double serialisation.
+        // as typescript does not seem to catch that, let's be safe.
         if(typeof(content) === 'string'){
           console.warn(new Error('(\\)(°,,°)(\\) blblblblbl you are stringifying a string, bailing out'))
         } else {

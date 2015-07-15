@@ -43,13 +43,15 @@ define(["require", "exports"], function (require, exports) {
          */
     exports.notebook_from_file_contents = function (contents) {
         var notebook = JSON.parse(contents);
-        // bug in some case notebook as serialized twice.
-        // make sure to re-deserialized:
+        // bug in some case notebook where serialized twice.
+        // make sure to re-deserialized, if once parse the notebook is still a
+        // string.
         if (typeof (notebook) === "string") {
             console.warn("[notebook_model.ts] (╯°□°）╯︵ ┻━┻ :: Apparently Notebook has been serialized twice, deserializing a second time !");
-            debugger;
+            // here we need to cast notebook to <any> as otherwise compiler complain
+            // that string/ notebook cannot be cast to each other.
             notebook = JSON.parse(notebook);
-            console.warn("[notebook_model.ts] Double desirializing went ok");
+            console.warn("[notebook_model.ts] Double desirializing went ok.");
         }
         var unsplit_lines = function (multiline_string) {
             if (Array.isArray(multiline_string)) {
