@@ -21,7 +21,7 @@ define(["require", "exports"], function (require, exports) {
      */
     var transform_notebook = function (notebook, transform_fn) {
         if (!notebook['cells']) {
-            return;
+            return null;
         }
         notebook['cells'].forEach(function (cell) {
             if (cell['source']) {
@@ -43,6 +43,16 @@ define(["require", "exports"], function (require, exports) {
          */
     exports.notebook_from_file_contents = function (contents) {
         var notebook = JSON.parse(contents);
+        // bug in some case notebook where serialized twice.
+        // make sure to re-deserialized, if once parse the notebook is still a
+        // string.
+        if (typeof (notebook) === "string") {
+            console.warn("[notebook_model.ts] (╯°□°）╯︵ ┻━┻ :: Apparently Notebook has been serialized twice, deserializing a second time !");
+            // here we need to cast notebook to <any> as otherwise compiler complain
+            // that string/ notebook cannot be cast to each other.
+            notebook = JSON.parse(notebook);
+            console.warn("[notebook_model.ts] Double desirializing went ok.");
+        }
         var unsplit_lines = function (multiline_string) {
             if (Array.isArray(multiline_string)) {
                 return multiline_string.join('');
@@ -52,14 +62,20 @@ define(["require", "exports"], function (require, exports) {
             }
         };
         transform_notebook(notebook, unsplit_lines);
+        notebook.metadata = notebook.metadata || {};
         return notebook;
     };
     /**
      * Creates the contents of a file from a JSON notebook representation.
      * @param {Object} notebook a JSON representation of the notebook.
-     * @return {string} The JSON representation with lines split.
+     * @return {Object} The JSON representation with lines split.
      */
-    exports.file_contents_from_notebook = function (notebook) {
+    exports.notebook_json_contents_from_notebook = function (notebook) {
+        if (typeof (notebook) == 'string') {
+            var e = new Error("[notebook_model.ts] `file_contents_from_notebook`'s notebook is a string");
+            console.error(e);
+            throw e;
+        }
         var notebook_copy = JSON.parse(JSON.stringify(notebook));
         var split_lines = function (obj) {
             if (typeof (obj) !== 'string') {
@@ -75,7 +91,15 @@ define(["require", "exports"], function (require, exports) {
             });
         };
         transform_notebook(notebook, split_lines);
-        return JSON.stringify(notebook_copy);
+        return notebook;
+    };
+    /**
+     * Creates the contents of a file from a JSON notebook representation.
+     * @param {Object} notebook a JSON representation of the notebook.
+     * @return {String} The JSON representation with lines split.
+     */
+    exports.file_contents_from_notebook = function (notebook) {
+        return JSON.stringify(exports.notebook_json_contents_from_notebook(notebook));
     };
     /**
      * Create a JSON representation of a new notebook

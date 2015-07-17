@@ -37,7 +37,7 @@ export enum FileType {FILE=1, FOLDER=2}
  * @return A promise fullfilled by either the files resource for the given
  *     file/folder, or rejected with an Error object.
  */
-export var get_resource_for_relative_path = function(path_component, type:FileType, opt_child_resource, folder_id) {
+export var get_resource_for_relative_path = function(path_component:String, type:FileType, opt_child_resource:Boolean, folder_id:String): Promise<any> {
         var query = 'title = \'' + path_component + '\' and trashed = false ';
         if (type == FileType.FOLDER) {
             query += ' and mimeType = \'' + FOLDER_MIME_TYPE + '\'';
@@ -86,7 +86,7 @@ export var split_path = function(path:Path):Path[] {
  * @return {Promise} fullfilled with file/folder id (string) on success
  *     or Error object on error.
  */
-export var get_resource_for_path = function(path, type?) {
+export var get_resource_for_path = function(path:Path, type?) {
         var components = split_path(path);
         if (components.length == 0) {
             return gapiutils.execute(gapi.client.drive.about.get())
@@ -101,11 +101,16 @@ export var get_resource_for_path = function(path, type?) {
             var component = components[i];
             var t = (i == components.length - 1) ? type : FileType.FOLDER;
             var child_resource = i < components.length - 1;
-            var r2 = result.then(function(resource) { return resource['id']; });
-            r2 = r2.then($.proxy(get_resource_for_relative_path, this,
-                                         component, t, child_resource));
+            // IIFE or, component`, `t`, `child_resources` get shared in
+            // between Promises
+            result = ((component:String, t:FileType, child_resource:Boolean, result) => {
+              return result.then((data) => {
+                  return get_resource_for_relative_path(component, t, child_resource, data['id'])
+                  }
+              );
+            })(component, t, child_resource, result)
         };
-        return r2;
+        return result;
     }
 
 
@@ -312,5 +317,3 @@ export var set_user_info = function(selector:string):Promise<any>{
         $('#header-container').prepend($('<span/>').append(image));
     })
 }
-
-

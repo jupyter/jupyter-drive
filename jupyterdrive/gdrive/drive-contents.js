@@ -14,7 +14,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
         var format = model.format;
         if (model['type'] === 'notebook') {
             // This seem to be wrong content is Notebook here. string below
-            content = notebook_model.file_contents_from_notebook(content);
+            content = notebook_model.notebook_json_contents_from_notebook(content);
             format = 'json';
             mimetype = driveutils.NOTEBOOK_MIMETYPE;
         }
@@ -30,8 +30,15 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
         }
         // Set mime type according to format if it's not set
         if (format == 'json') {
-            // This seem to be wrong content is String Here, Notebook above
-            content = JSON.stringify(content);
+            // This seem to have been wrong content, as type was String Here,
+            // instead of a Notebook Json model. This lead to double serialisation.
+            // as typescript does not seem to catch that, let's be safe.
+            if (typeof (content) === 'string') {
+                console.warn(new Error('(\\)(°,,°)(\\) blblblblbl you are stringifying a string, bailing out'));
+            }
+            else {
+                content = JSON.stringify(content);
+            }
             mimetype = mimetype || 'application/json';
         }
         else if (format == 'base64') {
@@ -131,10 +138,9 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
                 gapiutils.gapi_ready.then(driveutils.set_user_info);
             });
         }
-        //
-        // Utility functions
-        //
-        
+        /**
+         * Utility functions
+         */
         /**
          * This function should be called when a file is modified or opened.  It
          * caches the revisionId of the head revision of that file.  This
@@ -144,7 +150,7 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          * checkpoint after saving.
          *
          * @param {resource} resource_prm a Google Drive file resource.
-         **/
+         */
         GoogleDriveContents.prototype._observe_file_resource = function (resource) {
             this._last_observed_revision[resource['id']] = resource['headRevisionId'];
         };
@@ -156,6 +162,11 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          */
         GoogleDriveContents.prototype._save_existing = function (resource, model) {
             var that = this;
+            if (typeof (model) == 'string') {
+                var e = new Error("[drive-contents.ts] `_save_existing`'s model is a string");
+                console.error(e);
+                throw e;
+            }
             var converted = contents_model_to_metadata_and_bytes(model);
             var contents = converted[1];
             var save = function () {
@@ -193,6 +204,11 @@ define(["require", "exports", 'jquery', 'base/js/utils', 'base/js/dialog', './ga
          */
         GoogleDriveContents.prototype._upload_new = function (folder_id, model) {
             var that = this;
+            if (typeof (model) == 'string') {
+                var e = new Error("[drive-contents.ts] `_save_existing`'s model is a string");
+                console.error(e);
+                throw e;
+            }
             var converted = contents_model_to_metadata_and_bytes(model);
             var metadata = converted[0];
             var contents = converted[1];

@@ -21,7 +21,7 @@ export declare enum FileType {
  * @return A promise fullfilled by either the files resource for the given
  *     file/folder, or rejected with an Error object.
  */
-export declare var get_resource_for_relative_path: (path_component: any, type: FileType, opt_child_resource: any, folder_id: any) => any;
+export declare var get_resource_for_relative_path: (path_component: String, type: FileType, opt_child_resource: Boolean, folder_id: String) => Promise<any>;
 /**
  * Split a path into path components
  */
@@ -37,7 +37,7 @@ export declare var split_path: (path: iface.Path) => iface.Path[];
  * @return {Promise} fullfilled with file/folder id (string) on success
  *     or Error object on error.
  */
-export declare var get_resource_for_path: (path: any, type?: any) => any;
+export declare var get_resource_for_path: (path: iface.Path, type?: any) => any;
 /**
  * Gets the Google Drive file/folder ID for a file or folder.  The path is
  * always treated as an absolute path, no matter whether it contains leading

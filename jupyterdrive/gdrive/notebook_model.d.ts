@@ -1,10 +1,10 @@
 export interface Cell {
     source: any;
-    metadata: any;
+    metadata: Object;
 }
 export interface Notebook {
     cells: Cell[];
-    metadata: any;
+    metadata: Object;
     nbformat: number;
     nbformat_minor: number;
 }
@@ -17,7 +17,13 @@ export declare var notebook_from_file_contents: (contents: string) => Notebook;
 /**
  * Creates the contents of a file from a JSON notebook representation.
  * @param {Object} notebook a JSON representation of the notebook.
- * @return {string} The JSON representation with lines split.
+ * @return {Object} The JSON representation with lines split.
+ */
+export declare var notebook_json_contents_from_notebook: (notebook: Notebook) => Notebook;
+/**
+ * Creates the contents of a file from a JSON notebook representation.
+ * @param {Object} notebook a JSON representation of the notebook.
+ * @return {String} The JSON representation with lines split.
  */
 export declare var file_contents_from_notebook: (notebook: Notebook) => string;
 /**
