@@ -25,6 +25,12 @@ Drive, run
 python -m jupyterdrive
 ```
 
+To deactivate, run
+
+```bash
+python -m jupyterdrive --deactivate
+```
+
 ## Note on Jupyter/IPython
 
 We try to support both IPython 3.x and above version, though many changes in configuration 
