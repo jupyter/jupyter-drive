@@ -176,7 +176,7 @@ Once you click `Accept` you should be able to start creating new notebooks on
 Google Drive, and open existing ones created by this application, and
 view files/directories in the tree view.
 
-## Advance configuration.
+## Advanced configuration
 
 The contents manager can access the `common` section of nbconfig, thus
 you can set config values in `<profile_dir>/nbconfig/common.json`. The default
