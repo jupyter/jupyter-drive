@@ -8,5 +8,6 @@ dist/
 **/.ipynb_checkpoints/
 .coverage
 .*.swp
+.*.swo
 node_modules
 *.map
