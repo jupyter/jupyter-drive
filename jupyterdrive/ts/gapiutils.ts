@@ -178,6 +178,9 @@ var load_gapi_2 = function(d):Promise<any> {
     });
 };
 
+/* {set,clear}Timeout handle for the authorization refresh timeout. */
+var _authorizeTimeout = null;
+
 /**
  * Returns a promise fullfilled when the Google API has authorized.
  * @param {boolean} opt_withPopup If true, display popup without first
@@ -199,6 +202,29 @@ var authorize = function(opt_withPopup:boolean, conf:any):Promise<any> {
                 'scope': scope,
                 'immediate': !opt_withPopup
             }, function(result) {
+                // Google API auth tokens have an inbuilt expiry, usually 2600
+                // seconds == 1 hour. The Google-blessed approach to long-lived
+                // web apps is to refresh the auth token after 45 minutes (===
+                // 3/4 of expirty time). If we are given an expiry time (and if
+                // that expiry time is numeric) set a timeout to refresh the
+                // token.
+                if(result.expires_in && (+result.expires_in > 0)) {
+                    // Clear any existing timeout
+                    if(_authorizeTimeout !== null) {
+                        clearTimeout(_authorizeTimeout);
+                    }
+
+                    // Set a reauthorization timeout to be 3/4 of expires_in.
+                    // Note that expires_in is in seconds and setTimeout takes a
+                    // milliseconds argument, hence the multiplication by 750.
+                    _authorizeTimeout = setTimeout(function() {
+                        console.log("Refreshing Google API token.");
+                        _authorizeTimeout = null;
+                        _conf_prm.then(function(config) {
+                            authorize(false, config);
+                        });
+                    }, 750 * (+result.expires_in));
+                }
                 resolve(wrap_result(result));
             });
         });
