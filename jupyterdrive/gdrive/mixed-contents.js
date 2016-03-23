@@ -4,6 +4,7 @@
 //
 //
 define(["require", "exports", 'jquery', "base/js/utils"], function (require, exports, $, utils) {
+    "use strict";
     /** Enum for object types */
     (function (ArgType) {
         ArgType[ArgType["PATH"] = 1] = "PATH";
@@ -14,17 +15,18 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
     var ArgType = exports.ArgType;
     ;
     var _default = { "schema": [
-        {
-            "root": "local",
-            "stripjs": false,
-            "contents": "services/contents"
-        },
-        {
-            "root": "gdrive",
-            "stripjs": true,
-            "contents": "./drive-contents"
-        }
-    ] };
+            {
+                "root": "local",
+                "stripjs": false,
+                "contents": "services/contents"
+            },
+            {
+                "root": "gdrive",
+                "stripjs": true,
+                "contents": "./drive-contents"
+            }
+        ]
+    };
     var MixedContents = (function () {
         function MixedContents(options) {
             // Constructor
@@ -105,9 +107,7 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
          *
          */
         MixedContents.prototype.from_virtual_path = function (root, path, config) {
-            var match_conf = config.filter(function (x) {
-                return x.root == root;
-            });
+            var match_conf = config.filter(function (x) { return x.root == root; });
             if (match_conf[0].stripjs !== true) {
                 return path;
             }
@@ -148,13 +148,13 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
             return list;
         };
         MixedContents.prototype._to_virtual = function (root, type, object) {
-            if (type === 1 /* PATH */) {
+            if (type === ArgType.PATH) {
                 return this._to_virtual_path(root, object);
             }
-            else if (type === 2 /* FILE */) {
+            else if (type === ArgType.FILE) {
                 return this._to_virtual_file(root, object);
             }
-            else if (type === 3 /* LIST */) {
+            else if (type === ArgType.LIST) {
                 return this._to_virtual_list(root, object);
             }
             else {
@@ -162,13 +162,13 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
             }
         };
         MixedContents.prototype.from_virtual = function (root, type, object, config) {
-            if (type === 1 /* PATH */) {
+            if (type === ArgType.PATH) {
                 return this.from_virtual_path(root, object, config);
             }
-            else if (type === 2 /* FILE */) {
+            else if (type === ArgType.FILE) {
                 throw "from_virtual_file not implemented";
             }
-            else if (type === 3 /* LIST */) {
+            else if (type === ArgType.LIST) {
                 throw "from_virtual_list not implemented";
             }
             else {
@@ -185,7 +185,8 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
         MixedContents.prototype._route_function = function (method_name, arg_types, return_type, args) {
             var _this = this;
             return this._filesystem.then(function (filesystem) {
-                if (arg_types.length == 0 || arg_types[0] != 1 /* PATH */) {
+                if (arg_types.length == 0 || arg_types[0] != ArgType.PATH) {
+                    // This should never happen since arg_types is hard coded below.
                     throw 'unexpected value of arg_types';
                 }
                 var root = _this.get_fs_root(filesystem, args[0]);
@@ -208,40 +209,40 @@ define(["require", "exports", 'jquery', "base/js/utils"], function (require, exp
          * File management functions
          */
         MixedContents.prototype.get = function (path, type, options) {
-            return this._route_function('get', [1 /* PATH */, 4 /* OTHER */, 4 /* OTHER */], 2 /* FILE */, arguments);
+            return this._route_function('get', [ArgType.PATH, ArgType.OTHER, ArgType.OTHER], ArgType.FILE, arguments);
         };
         MixedContents.prototype.new_untitled = function (path, options) {
-            return this._route_function('new_untitled', [1 /* PATH */, 4 /* OTHER */], 2 /* FILE */, arguments);
+            return this._route_function('new_untitled', [ArgType.PATH, ArgType.OTHER], ArgType.FILE, arguments);
         };
         MixedContents.prototype.delete = function (path) {
-            return this._route_function('delete', [1 /* PATH */], 4 /* OTHER */, arguments);
+            return this._route_function('delete', [ArgType.PATH], ArgType.OTHER, arguments);
         };
         MixedContents.prototype.rename = function (path, new_path) {
-            return this._route_function('rename', [1 /* PATH */, 1 /* PATH */], 2 /* FILE */, arguments);
+            return this._route_function('rename', [ArgType.PATH, ArgType.PATH], ArgType.FILE, arguments);
         };
         MixedContents.prototype.save = function (path, model, options) {
-            return this._route_function('save', [1 /* PATH */, 4 /* OTHER */, 4 /* OTHER */], 2 /* FILE */, arguments);
+            return this._route_function('save', [ArgType.PATH, ArgType.OTHER, ArgType.OTHER], ArgType.FILE, arguments);
         };
         MixedContents.prototype.list_contents = function (path, options) {
-            return this._route_function('list_contents', [1 /* PATH */, 4 /* OTHER */], 3 /* LIST */, arguments);
+            return this._route_function('list_contents', [ArgType.PATH, ArgType.OTHER], ArgType.LIST, arguments);
         };
         MixedContents.prototype.copy = function (from_file, to_dir) {
-            return this._route_function('copy', [1 /* PATH */, 1 /* PATH */], 2 /* FILE */, arguments);
+            return this._route_function('copy', [ArgType.PATH, ArgType.PATH], ArgType.FILE, arguments);
         };
         /**
          * Checkpointing Functions
          */
         MixedContents.prototype.create_checkpoint = function (path, options) {
-            return this._route_function('create_checkpoint', [1 /* PATH */, 4 /* OTHER */], 4 /* OTHER */, arguments);
+            return this._route_function('create_checkpoint', [ArgType.PATH, ArgType.OTHER], ArgType.OTHER, arguments);
         };
         MixedContents.prototype.restore_checkpoint = function (path, checkpoint_id, options) {
-            return this._route_function('restore_checkpoint', [1 /* PATH */, 4 /* OTHER */, 4 /* OTHER */], 4 /* OTHER */, arguments);
+            return this._route_function('restore_checkpoint', [ArgType.PATH, ArgType.OTHER, ArgType.OTHER], ArgType.OTHER, arguments);
         };
         MixedContents.prototype.list_checkpoints = function (path, options) {
-            return this._route_function('list_checkpoints', [1 /* PATH */, 4 /* OTHER */], 4 /* OTHER */, arguments);
+            return this._route_function('list_checkpoints', [ArgType.PATH, ArgType.OTHER], ArgType.OTHER, arguments);
         };
         return MixedContents;
-    })();
+    }());
     exports.MixedContents = MixedContents;
     exports.Contents = MixedContents;
 });

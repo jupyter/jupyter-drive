@@ -5,6 +5,7 @@
 //
 //
 define(["require", "exports"], function (require, exports) {
+    "use strict";
     /**
      * Functions related to the Notebook JSON representation
      *
@@ -109,12 +110,12 @@ define(["require", "exports"], function (require, exports) {
     exports.new_notebook = function () {
         return {
             'cells': [{
-                'cell_type': 'code',
-                'source': '',
-                'outputs': [],
-                'language': 'python',
-                'metadata': {}
-            }],
+                    'cell_type': 'code',
+                    'source': '',
+                    'outputs': [],
+                    'language': 'python',
+                    'metadata': {}
+                }],
             'metadata': {},
             'nbformat': 4,
             'nbformat_minor': 0
