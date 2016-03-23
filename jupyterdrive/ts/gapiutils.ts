@@ -217,7 +217,7 @@ var authorize = function(opt_withPopup:boolean, conf:any):Promise<any> {
                 'scope': scope,
                 'immediate': !opt_withPopup
             }, function(result) {
-                // Google API auth tokens have an inbuilt expiry, usually 2600
+                // Google API auth tokens have an inbuilt expiry, usually 3600
                 // seconds == 1 hour. The Google-blessed approach to long-lived
                 // web apps is to refresh the auth token after 45 minutes (===
                 // 3/4 of expirty time). If we are given an expiry time (and if
