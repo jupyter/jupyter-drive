@@ -2,6 +2,7 @@
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
 define(["require", "exports", './gapiutils'], function (require, exports, gapiutils) {
+    "use strict";
     /**
      * Gets the user to pick a file in the file picker.  This indicates to
      * Google Drive that the user has consented to open that file with this
@@ -26,8 +27,16 @@ define(["require", "exports", './gapiutils'], function (require, exports, gapiut
                 }
             };
             http: var builder = new google.picker.PickerBuilder();
-            var search_view = new google.picker.DocsView(google.picker.ViewId.DOCS).setMode(google.picker.DocsViewMode.LIST).setParent(parent_id).setQuery(filename);
-            var picker = builder.addView(search_view).setOAuthToken(gapi.auth.getToken()['access_token']).setAppId(gapiutils.APP_ID).setCallback(callback).build();
+            var search_view = new google.picker.DocsView(google.picker.ViewId.DOCS)
+                .setMode(google.picker.DocsViewMode.LIST)
+                .setParent(parent_id)
+                .setQuery(filename);
+            var picker = builder
+                .addView(search_view)
+                .setOAuthToken(gapi.auth.getToken()['access_token'])
+                .setAppId(gapiutils.APP_ID)
+                .setCallback(callback)
+                .build();
             picker.setVisible(true);
         });
     }

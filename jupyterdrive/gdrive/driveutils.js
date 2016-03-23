@@ -2,6 +2,7 @@
 // Copyright (c) IPython Development Team.
 // Distributed under the terms of the Modified BSD License.
 define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], function (require, exports, $, gapiutils, pickerutils) {
+    "use strict";
     exports.FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
     exports.NOTEBOOK_MIMETYPE = 'application/ipynb';
     exports.MULTIPART_BOUNDARY = '-------314159265358979323846';
@@ -27,7 +28,7 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
      */
     exports.get_resource_for_relative_path = function (path_component, type, opt_child_resource, folder_id) {
         var query = 'title = \'' + path_component + '\' and trashed = false ';
-        if (type == 2 /* FOLDER */) {
+        if (type == FileType.FOLDER) {
             query += ' and mimeType = \'' + exports.FOLDER_MIME_TYPE + '\'';
         }
         var request = null;
@@ -38,7 +39,8 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
             query += ' and \'' + folder_id + '\' in parents';
             request = gapi.client.drive.files.list({ 'q': query });
         }
-        return gapiutils.execute(request).then(function (response) {
+        return gapiutils.execute(request)
+            .then(function (response) {
             var files = response['items'];
             if (!files || files.length == 0) {
                 var error = new Error('The specified file/folder did not exist: ' + path_component);
@@ -73,7 +75,8 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
     exports.get_resource_for_path = function (path, type) {
         var components = exports.split_path(path);
         if (components.length == 0) {
-            return gapiutils.execute(gapi.client.drive.about.get()).then(function (resource) {
+            return gapiutils.execute(gapi.client.drive.about.get())
+                .then(function (resource) {
                 var id = resource['rootFolderId'];
                 var request = gapi.client.drive.files.get({ 'fileId': id });
                 return gapiutils.execute(request);
@@ -82,7 +85,7 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
         var result = Promise.resolve({ id: 'root' });
         for (var i = 0; i < components.length; i++) {
             var component = components[i];
-            var t = (i == components.length - 1) ? type : 2 /* FOLDER */;
+            var t = (i == components.length - 1) ? type : FileType.FOLDER;
             var child_resource = i < components.length - 1;
             // IIFE or, component`, `t`, `child_resources` get shared in
             // between Promises
@@ -111,9 +114,8 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
         if (components.length == 0) {
             return $.Deferred().resolve('root');
         }
-        return exports.get_resource_for_path(path, type).then(function (resource) {
-            return resource['id'];
-        });
+        return exports.get_resource_for_path(path, type)
+            .then(function (resource) { return resource['id']; });
     };
     /**
      * Obtains the filename that should be used for a new file in a given
@@ -132,19 +134,27 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
     exports.get_new_filename = function (opt_folderId, ext, base_name) {
         /** @type {string} */
         var folderId = opt_folderId || 'root';
-        var query = 'title contains \'' + base_name + '\'' + ' and \'' + folderId + '\' in parents' + ' and trashed = false';
+        var query = 'title contains \'' + base_name + '\'' +
+            ' and \'' + folderId + '\' in parents' +
+            ' and trashed = false';
         var request = gapi.client.drive.files.list({
             'maxResults': 1000,
             'folderId': folderId,
             'q': query
         });
         var fallbackFilename = base_name + ext;
-        return gapiutils.execute(request).then(function (response) {
+        return gapiutils.execute(request)
+            .then(function (response) {
             // Use 'Untitled.ipynb' as a fallback in case of error
             var files = response['items'] || [];
             var existingFilenames = $.map(files, function (filesResource) {
                 return filesResource['title'];
             });
+            // Loop over file names Untitled0, ... , UntitledN where N is the number of
+            // elements in existingFilenames.  Select the first file name that does not
+            // belong to existingFilenames.  This is guaranteed to find a file name
+            // that does not belong to existingFilenames, since there are N + 1 file
+            // names tried, and existingFilenames contains N elements.
             for (var i = 0; i <= existingFilenames.length; i++) {
                 /** @type {string} */
                 var filename = base_name + i + ext;
@@ -154,9 +164,8 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
             }
             // Control should not reach this point, so an error has occured
             return fallbackFilename;
-        }).catch(function (error) {
-            return Promise.resolve(fallbackFilename);
-        });
+        })
+            .catch(function (error) { return Promise.resolve(fallbackFilename); });
     };
     /**
      * Uploads a notebook to Drive, either creating a new one or saving an
@@ -175,7 +184,8 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
         var params = opt_params || {};
         var delimiter = '\r\n--' + exports.MULTIPART_BOUNDARY + '\r\n';
         var close_delim = '\r\n--' + exports.MULTIPART_BOUNDARY + '--';
-        var body = delimiter + 'Content-Type: application/json\r\n\r\n';
+        var body = delimiter +
+            'Content-Type: application/json\r\n\r\n';
         var mime;
         if (metadata) {
             mime = metadata.mimeType;
@@ -188,7 +198,9 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
                 body += 'Content-Transfer-Encoding: base64\r\n';
             }
         }
-        body += '\r\n' + data + close_delim;
+        body += '\r\n' +
+            data +
+            close_delim;
         var path = '/upload/drive/v2/files';
         var method = 'POST';
         if (opt_fileId) {
@@ -203,7 +215,8 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
                 'pinned': params['pinned']
             },
             'headers': {
-                'Content-Type': 'multipart/mixed; boundary="' + exports.MULTIPART_BOUNDARY + '"'
+                'Content-Type': 'multipart/mixed; boundary="' +
+                    exports.MULTIPART_BOUNDARY + '"'
             },
             'body': body
         });
@@ -232,7 +245,8 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
             }
             var request = gapi.client.drive.files.get({ 'fileId': resource['id'] });
             var reply = gapiutils.execute(request);
-            var delay = exports.GET_CONTENTS_INITIAL_DELAY * Math.pow(exports.GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR, exports.GET_CONTENTS_MAX_TRIES - opt_num_tries);
+            var delay = exports.GET_CONTENTS_INITIAL_DELAY *
+                Math.pow(exports.GET_CONTENTS_EXPONENTIAL_BACKOFF_FACTOR, exports.GET_CONTENTS_MAX_TRIES - opt_num_tries);
             var delayed_reply = new Promise(function (resolve, reject) {
                 window.setTimeout(function () {
                     resolve(reply);
@@ -248,7 +262,8 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
             // the user to open a FilePicker window that allows them to indicate
             // to Google Drive that they intend to open that file with this
             // app.
-            return pickerutils.pick_file(resource.parents[0]['id'], resource['title']).then(function () {
+            return pickerutils.pick_file(resource.parents[0]['id'], resource['title'])
+                .then(function () {
                 return exports.get_contents(resource, true, exports.GET_CONTENTS_MAX_TRIES);
             });
         }
@@ -265,7 +280,12 @@ define(["require", "exports", 'jquery', './gapiutils', './pickerutils'], functio
         var request = gapi.client.drive.about.get();
         return gapiutils.execute(request).then(function (result) {
             var user = result.user;
-            var image = $('<img/>').attr('src', result.user.picture.url).addClass('pull-right').css('border-radius', '32px').css('width', '32px').css('margin-top', '-1px').css('margin-bottom', '-1px');
+            var image = $('<img/>').attr('src', result.user.picture.url)
+                .addClass('pull-right')
+                .css('border-radius', '32px')
+                .css('width', '32px')
+                .css('margin-top', '-1px')
+                .css('margin-bottom', '-1px');
             image.attr('title', 'Logged in to Google Drive as ' + user.displayName);
             $('#header-container').prepend($('<span/>').append(image));
         });
