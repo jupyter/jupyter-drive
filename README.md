@@ -195,3 +195,19 @@ values that are used are the following:
 
 The `APP_ID` section is not yet configurable, but should be configurable in the
 same way at some point in the future.
+
+# Developing
+
+The client-side code for jupyter-drive is written in TypeScript. The TypeScript
+transpiler can be installed using ``npm``:
+
+```console
+npm install
+```
+
+The JavaScript may then be re-compiled using ``npm run``:
+
+```console
+npm run gulp js
+```
+
