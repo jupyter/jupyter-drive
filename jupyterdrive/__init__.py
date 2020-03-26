@@ -153,6 +153,8 @@ def main(argv=None):
     if args.deactivate:
         deactivate()
     else:
+        if not args.user and not os.access("/usr/local/share/jupyter", os.W_OK):
+            parser.error("Cannot write to /usr/local/share/jupyter. Specify --user to install to ~/.jupyter instead.")
         install(   path=args.path,
                   mixed=args.mixed,
                    user=args.user,
