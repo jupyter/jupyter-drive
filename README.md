@@ -1,5 +1,13 @@
 # Google Drive support for Jupyter Notebook
 
+## Deprecation Notice
+
+The jupyter-drive project is no longer supported due to the [deprecation of the Google Realtime API](https://developers.google.com/realtime/deprecation).
+
+You might instead consider [jupyterlab/jupyterlab-google-drive](https://github.com/jupyterlab/jupyterlab-google-drive);
+which adds a Google Drive file browser to the left sidebar of JupyterLab.
+
+## Installation
 
 This repository contains custom
 [`Contents`](https://github.com/ipython/ipython/blob/master/IPython/html/static/services/contents.js) classes that allows IPython to use
