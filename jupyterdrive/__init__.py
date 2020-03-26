@@ -15,14 +15,15 @@ log.setLevel(20)
 if JUPYTER:
     import notebook.nbextensions as nbe
     from IPython.paths import locate_profile
-    from IPython.utils.py3compat import cast_unicode_py2
     from jupyter_core.paths import jupyter_config_dir
     from traitlets.config import Config, JSONFileConfigLoader, ConfigFileNotFound
 else :
     import IPython.html.nbextensions as nbe
     from IPython.utils.path import locate_profile
-    from IPython.utils.py3compat import cast_unicode_py2
     from IPython.config import Config, JSONFileConfigLoader, ConfigFileNotFound
+
+if sys.version_info.major > 2:
+    unicode = str
 
 
 def install(profile='default', symlink=True, mixed=False, user=False,
@@ -79,7 +80,7 @@ class jconfig(object):
         if not os.path.exists(self.pdir):
             os.mkdir(self.pdir)
         with io.open(os.path.join(self.pdir,self.cff_name),'w', encoding='utf-8') as f:
-            f.write(cast_unicode_py2(json.dumps(self.config, indent=2, default=lambda _:{})))
+            f.write(unicode(json.dumps(self.config, indent=2, default=lambda _:{})))
 
 
 def activate(profile='default', mixed=False):
